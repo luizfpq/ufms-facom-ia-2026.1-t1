@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Dados pesados (disponibilizar externamente se necessário)
+data/arxiv_raw.jsonl
+data/*.jsonl
+
+# macOS
+.DS_Store
+__MACOSX/
+
+# IDEs
+.vscode/
+.idea/
+
+# LaTeX build artifacts
+relatorio/*.aux
+relatorio/*.log
+relatorio/*.out
+relatorio/*.toc
+relatorio/*.synctex.gz
+relatorio/*.bbl
+relatorio/*.blg
+
+# Segredos
+.env
+*.key
