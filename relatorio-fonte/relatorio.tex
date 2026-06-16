@@ -32,11 +32,11 @@ Este trabalho apresenta um sistema de recuperação de informação híbrido par
 
 \section{Introdução}
 
-O volume de publicações científicas sobre inteligência artificial aplicada a domínios governamentais cresce rapidamente. Pesquisadores e servidores públicos que buscam referências para projetos de automação em compras públicas enfrentam a dificuldade de localizar artigos relevantes em bases amplas e heterogêneas. Sistemas de recuperação de informação (IR) específicos para este domínio são escassos. Sistemas de Geração Aumentada por Recuperação (RAG) \cite{lewis2020,gao2024} endereçam esse cenário acoplando um recuperador a um modelo generativo; entretanto, a qualidade da resposta final depende criticamente do componente de recuperação, o ``R'' do RAG, que é o objeto deste trabalho.
+O volume de publicações científicas sobre inteligência artificial aplicada a domínios governamentais cresce rapidamente. Pesquisadores e servidores públicos que buscam referências para projetos de automação em compras públicas enfrentam a dificuldade de localizar artigos relevantes em bases amplas e heterogêneas. Sistemas de recuperação de informação (IR) específicos para este domínio ainda são escassos. Os sistemas de Geração Aumentada por Recuperação (RAG) \cite{lewis2020,gao2024} atacam esse problema: acoplam um recuperador a um modelo generativo. Mas a qualidade da resposta final depende do recuperador. É o ``R'' do RAG, e é o objeto deste trabalho.
 
 Este trabalho implementa e avalia um sistema de recuperação de artigos científicos sobre IA aplicada a compras públicas e licitações, comparando três abordagens: (i) BM25 como baseline esparso, (ii) KNN com representação TF-IDF como recuperador denso, e (iii) um módulo híbrido que combina ambos via Reciprocal Rank Fusion (RRF).
 
-A contribuição principal é a avaliação empírica dessas abordagens sobre uma coleção bilíngue de 3.064 artigos do domínio, com 15 consultas (10 em inglês, 5 em português) e julgamentos de relevância manuais, demonstrando os trade-offs entre recuperação esparsa e densa para vocabulário jurídico-administrativo em dois idiomas.
+A contribuição principal é empírica. Avaliamos as três abordagens sobre uma coleção bilíngue de 3.064 artigos do domínio, com 15 consultas (10 em inglês, 5 em português) e julgamentos manuais de relevância. A comparação mostra os trade-offs entre recuperação esparsa e densa para vocabulário jurídico-administrativo em dois idiomas.
 
 \section{Trabalhos Relacionados}
 
@@ -46,7 +46,7 @@ A contribuição principal é a avaliação empírica dessas abordagens sobre um
 
 \textbf{Fusão de rankings.} Cormack et al. \cite{cormack2009} demonstraram que o Reciprocal Rank Fusion (RRF) supera métodos individuais e abordagens de aprendizado de ranking em diversas tarefas TREC, sem necessidade de treinamento adicional.
 
-\textbf{Arcabouço unificado.} Lin \cite{lin2021} propõe um arcabouço conceitual que unifica recuperação esparsa, densa e híbrida sob uma visão representacional, situando BM25, recuperadores densos e suas combinações como pontos de um mesmo espaço de projeto, o que fundamenta a comparação experimental conduzida neste trabalho.
+\textbf{Arcabouço unificado.} Lin \cite{lin2021} propõe um arcabouço que unifica recuperação esparsa, densa e híbrida sob uma visão representacional. BM25, recuperadores densos e suas combinações viram pontos de um mesmo espaço de projeto. Esse arcabouço fundamenta a comparação experimental deste trabalho.
 
 \textbf{NLP para domínio legal.} Trabalhos recentes exploram modelos de linguagem para textos jurídicos \cite{chalkidis2020}, mas poucos abordam especificamente o domínio de compras públicas e licitações brasileiras.
 
@@ -58,7 +58,7 @@ Este trabalho é o embrião técnico de uma pesquisa de mestrado sobre classific
 
 A coleção foi construída a partir da API OpenAlex em duas etapas: (i) coleta de artigos em inglês sobre IA aplicada a procurement e legal NLP; (ii) coleta complementar de artigos em português sobre licitações, direito administrativo e auditoria governamental. A inclusão de documentos em português é motivada pelo fato de que o domínio-alvo (compras públicas brasileiras, Lei 14.133/2021) produz literatura predominantemente em português.
 
-A segunda etapa exigiu uma pesquisa exploratória prévia para identificar quais bases e periódicos brasileiros publicam sobre o cruzamento entre tecnologia e administração pública. Essa pesquisa exploratória foi conduzida com apoio do Gemini (funcionalidade Deep Research), cujos resultados foram verificados manualmente e serviram como ponto de partida para a definição das palavras-chave em português usadas na coleta via OpenAlex. O relatório produzido nessa etapa (``Mapeamento e Arquitetura de APIs de Dados Abertos para PLN no Domínio Jurídico-Administrativo Brasileiro'') mapeou as seguintes fontes relevantes: Portal Nacional de Contratações Públicas (PNCP), Compras.gov.br, Jurisprudência do TCU, LexML, Dados Abertos da Câmara e Senado, BDTD, SciELO e o corpus Ulysses-RFCorpus. A coleta efetiva usou a API OpenAlex por abranger artigos indexados de periódicos brasileiros catalogados nestas bases, consolidando em uma única interface o acesso à produção acadêmica nacional sobre o tema.
+A segunda etapa exigiu uma busca prévia: quais bases e periódicos brasileiros publicam sobre o cruzamento entre tecnologia e administração pública? Conduzimos essa busca com apoio do Gemini (Deep Research). Verificamos os resultados manualmente e os usamos para definir as palavras-chave em português. O relatório dessa etapa (``Mapeamento e Arquitetura de APIs de Dados Abertos para PLN no Domínio Jurídico-Administrativo Brasileiro'') mapeou as fontes relevantes: PNCP, Compras.gov.br, Jurisprudência do TCU, LexML, Dados Abertos da Câmara e Senado, BDTD, SciELO e o corpus Ulysses-RFCorpus. A coleta usou a API OpenAlex, que indexa artigos de periódicos brasileiros catalogados nessas bases. Assim, uma única interface dá acesso à produção acadêmica nacional sobre o tema.
 
 Quanto à conformidade com a Seção 5 do enunciado: a OpenAlex consta entre as fontes explicitamente permitidas, e a BDTD (Biblioteca Digital Brasileira de Teses e Dissertações, do Ibict) foi adotada como fonte equivalente para a cobertura em português, mediante aprovação do professor. Nenhuma coleção pré-pronta de \emph{benchmark} de IR (e.g., BEIR, MS MARCO) foi usada como coleção principal; a coleção foi inteiramente construída e documentada para este trabalho.
 
@@ -88,7 +88,7 @@ O texto indexado de cada documento é a concatenação de título e abstract. A 
 
 \subsection{BM25 (recuperação esparsa)}
 
-Utilizamos a implementação \texttt{rank\_bm25} (BM25Okapi) com hiperparâmetros padrão da literatura: $k_1=1.5$ e $b=0.75$ \cite{robertson2009}. A escolha segue a recomendação de Robertson e Zaragoza, que demonstram que esses valores são robustos para coleções de tamanho moderado sem necessidade de ajuste empírico.
+Usamos a implementação \texttt{rank\_bm25} (BM25Okapi) com os hiperparâmetros padrão da literatura: $k_1=1.5$ e $b=0.75$ \cite{robertson2009}. A escolha segue Robertson e Zaragoza. Eles mostram que esses valores são robustos para coleções de tamanho moderado, sem precisar de ajuste empírico.
 
 A pontuação BM25 para um documento $d$ dada uma consulta $q$ com termos $q_1, \ldots, q_n$ é:
 
@@ -154,7 +154,7 @@ q15 & PT & classificação documentos administrativos aprendizado máquina \\
 
 \subsubsection{Construção dos qrels}
 
-Anotamos relevância via pooling: para cada query, unimos os top-10 retornados por cada sistema (BM25, KNN, RRF), removemos duplicatas, e julgamos cada documento manualmente. O pool totaliza 223 julgamentos com escala ternária (0=não-relevante, 1=relevante, 2=muito relevante).
+Anotamos relevância via pooling: para cada query, unimos os top-10 retornados por cada sistema (BM25, KNN, RRF), removemos duplicatas, e julgamos cada documento manualmente. O pool totaliza 231 julgamentos com escala ternária (0=não-relevante, 1=relevante, 2=muito relevante).
 
 \textbf{Critério de relevância adotado:} consideramos relevante (1) todo artigo que aborda diretamente a técnica ou domínio especificado na query, e altamente relevante (2) artigos que tratam exatamente do cruzamento entre a técnica de NLP/ML indicada e o domínio de procurement/legal da query.
 
@@ -177,7 +177,7 @@ RRF Híbrido      & 0.727 & 0.762 & 0.867 & 0.845 \\
 \end{tabular}
 \end{table}
 
-O RRF supera ambos os componentes em P@10 (+2pp sobre BM25, +2,7pp sobre KNN) e em MAP (+4,4pp sobre BM25), demonstrando que a fusão agrega valor significativo no cenário bilíngue com fontes heterogêneas.
+O RRF supera ambos os componentes em P@10 (+2pp sobre o BM25, +2,7pp sobre o KNN) e em MAP (+4,4pp sobre o BM25). O BM25 mantém o melhor nDCG@10. A fusão agrega valor no cenário bilíngue, com fontes heterogêneas.
 
 \subsection{Análise qualitativa}
 
@@ -193,7 +193,7 @@ O RRF supera ambos os componentes em P@10 (+2pp sobre BM25, +2,7pp sobre KNN) e 
 
 \subsection{Trade-offs entre recuperação esparsa e densa}
 
-\textbf{RRF lidera em P@10, R@10 e MAP; BM25 mantém o melhor nDCG@10.} No corpus bilíngue com fontes heterogêneas (OpenAlex EN, OpenAlex PT, BDTD), o RRF atinge P@10=0,727 e MAP=0,867, superando tanto o BM25 (P@10=0,707, MAP=0,823) quanto o KNN (P@10=0,700, MAP=0,774). A exceção é o nDCG@10, em que o BM25 (0,853) supera ligeiramente o RRF (0,845): como o nDCG aplica desconto logarítmico e premia fortemente os documentos mais relevantes nas primeiras posições, o casamento exato de termos do BM25 leva vantagem no topo quando a consulta emprega o vocabulário preciso do domínio, ao passo que a fusão eventualmente intercala documentos densos de relevância apenas parcial. A fusão de rankings complementares agrega valor quando há diversidade entre os recuperadores: o BM25 captura termos exatos (e.g., ``14133'', ``procurement'') e o KNN captura proximidade semântica entre documentos que compartilham vocabulário temático sem coincidência exata de termos.
+\textbf{RRF lidera em P@10, R@10 e MAP; BM25 mantém o melhor nDCG@10.} No corpus bilíngue com fontes heterogêneas (OpenAlex EN, OpenAlex PT, BDTD), o RRF atinge P@10=0,727 e MAP=0,867, superando tanto o BM25 (P@10=0,707, MAP=0,823) quanto o KNN (P@10=0,700, MAP=0,774). A exceção é o nDCG@10: o BM25 (0,853) supera de pouco o RRF (0,845). O nDCG aplica desconto logarítmico e premia os documentos mais relevantes nas primeiras posições. Quando a consulta usa o vocabulário preciso do domínio, o casamento exato do BM25 leva vantagem no topo. A fusão, por sua vez, às vezes intercala documentos densos de relevância apenas parcial. Ainda assim, combinar rankings complementares compensa quando há diversidade entre os recuperadores: o BM25 captura termos exatos (e.g., ``14133'', ``procurement'') e o KNN captura proximidade semântica entre documentos que tratam do mesmo tema sem repetir os termos.
 
 \textbf{BM25 e KNN praticamente empatam em P@10.} A diferença entre ambos é de apenas 0,7pp. Isso ocorre porque a subcoleção PT (BDTD + OpenAlex PT) introduz vocabulário mais diverso que o corpus EN puro, e o TF-IDF captura essa diversidade vetorial de forma competitiva. Em corpora exclusivamente anglófonos com vocabulário controlado, a literatura reporta vantagens maiores do BM25.
 
@@ -218,9 +218,9 @@ Os componentes implementados mapeiam diretamente para tópicos da disciplina:
 
 \section{Conclusão}
 
-Implementamos e avaliamos um sistema de recuperação híbrido para artigos sobre IA em compras públicas, com corpus bilíngue de 3.064 documentos (artigos OpenAlex em inglês e português, teses e dissertações da BDTD). O módulo RRF supera os recuperadores individuais em P@10 (0,727 vs. 0,707 do BM25) e MAP (0,867 vs. 0,823), demonstrando que a fusão de rankings complementares é eficaz quando há diversidade linguística, de representação e de fontes. Como trabalho futuro, pretendemos (i) substituir o TF-IDF por embeddings multilíngues, (ii) incorporar dados primários das APIs governamentais mapeadas (PNCP, Compras.gov.br, TCU, LexML) para construir um corpus de peças processuais reais, e (iii) migrar o sistema para o contexto da pesquisa de mestrado sobre classificação semissupervisionada de textos licitatórios\footnote{Vídeo de apresentação e repositório: ver arquivo LINKS.txt.}.
+Implementamos e avaliamos um sistema de recuperação híbrido para artigos sobre IA em compras públicas. O corpus é bilíngue, com 3.064 documentos: artigos da OpenAlex em inglês e português, mais teses e dissertações da BDTD. O módulo RRF supera os recuperadores individuais em P@10 (0,727 contra 0,707 do BM25) e MAP (0,867 contra 0,823). A fusão de rankings complementares funciona quando há diversidade linguística, de representação e de fontes. Como trabalho futuro, pretendemos (i) trocar o TF-IDF por embeddings multilíngues, (ii) incorporar dados primários das APIs governamentais mapeadas (PNCP, Compras.gov.br, TCU, LexML) para montar um corpus de peças processuais reais, e (iii) migrar o sistema para a pesquisa de mestrado sobre classificação semissupervisionada de textos licitatórios\footnote{Vídeo de apresentação e repositório: ver arquivo LINKS.txt.}.
 
-Uma extensão conceitual encontra-se em prototipação em ramo separado do repositório (\texttt{v2-reference-finder}), sem impacto sobre os resultados aqui reportados. Ela reaproveita o núcleo de recuperação como assistente de referências bibliográficas: o texto de um artigo em elaboração é tratado como consulta longa, da qual se extraem palavras-chave que alimentam a busca híbrida; a saída são referências em formato BibTeX e uma análise de lacunas, isto é, temas presentes no texto sem cobertura no corpus. Esse recorte transpõe o problema de recuperação avaliado neste trabalho para uma tarefa de apoio à revisão de literatura, em continuidade com a pesquisa de mestrado.
+Uma extensão conceitual está em prototipação, em ramo separado do repositório (\texttt{v2-reference-finder}), sem impacto sobre os resultados aqui reportados. Ela reaproveita o núcleo de recuperação como assistente de referências bibliográficas. O texto de um artigo em elaboração entra como consulta longa. Dele extraímos palavras-chave que alimentam a busca híbrida. A saída são referências em formato BibTeX e uma análise de lacunas: temas presentes no texto, mas sem cobertura no corpus. O recorte transpõe o problema de recuperação deste trabalho para o apoio à revisão de literatura, em continuidade com a pesquisa de mestrado.
 
 Para fins de reprodução e avaliação, o sistema completo (pipeline, dados e relatório) está empacotado em container e disponível para teste interativo via SSH\footnote{O método de acesso (endereço, porta e chave privada) está incluído nos arquivos anexos ao \texttt{.zip} desta submissão; as instruções constam do arquivo LINKS.txt. O login conduz diretamente ao ambiente isolado do trabalho, onde \texttt{make eval} reproduz as métricas aqui reportadas e \texttt{make demo} executa uma consulta.}.
 
