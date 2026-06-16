@@ -1,0 +1,2 @@
+# Dependencias de desenvolvimento/teste (nao necessarias para a entrega)
+pytest>=8,<9

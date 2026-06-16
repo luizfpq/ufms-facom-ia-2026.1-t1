@@ -56,6 +56,8 @@ def read_run(path: Path):
             if not line or line.startswith("#"):
                 continue
             parts = line.split()
+            if len(parts) < 5:
+                continue
             qid, _, docid, rank, score = parts[0], parts[1], parts[2], int(parts[3]), float(parts[4])
             run[qid].append((rank, score, docid))
     # ordena por rank (caso o arquivo nao venha ordenado)

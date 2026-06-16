@@ -47,11 +47,6 @@
     └── pool_anotacao.md     ← docs do pool com título+abstract
 ```
 
-> **Entrega ao docente:** o ZIP no AVA deve conter o `relatorio.pdf`, o código
-> (`src/`, `eval/`, `notebooks/`), os dados (`data/corpus.jsonl`), `queries.tsv`,
-> `qrels.tsv` e `LINKS.txt`. A pasta `relatorio-fonte/` contém apenas os fontes
-> LaTeX e não precisa ser enviada.
-
 ## Reprodução
 
 ```bash

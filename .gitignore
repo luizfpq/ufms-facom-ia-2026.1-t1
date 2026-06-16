@@ -57,3 +57,6 @@ id_*
 
 # Submissao (nao publicar): contem enderecos/credenciais de acesso
 LINKS.txt
+
+# pytest
+.pytest_cache/

@@ -19,6 +19,9 @@ eval: runs
 demo:
 	$(PYTHON) src/demo.py "$(QUERY)"
 
+test:
+	$(PYTHON) -m pytest -q tests/
+
 relatorio:
 	$(MAKE) -C relatorio-fonte
 
@@ -34,8 +37,9 @@ help:
 	@echo "  make runs        Gera os 3 runs TREC (BM25, KNN, RRF) em notebooks/runs/"
 	@echo "  make eval        Gera os runs e avalia (P@10, R@10, MAP, nDCG@10)"
 	@echo "  make demo        Demo interativa (use QUERY=\"sua consulta\")"
+	@echo "  make test        Roda os testes (pip install -r requirements-dev.txt)"
 	@echo "  make relatorio   Compila o relatorio LaTeX -> relatorio.pdf na raiz"
 	@echo "  make clean       Limpa artefatos de build do relatorio"
 	@echo "  make help        Exibe esta ajuda"
 
-.PHONY: all runs eval demo relatorio clean help
+.PHONY: all runs eval demo test relatorio clean help
