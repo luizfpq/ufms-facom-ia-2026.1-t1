@@ -42,7 +42,7 @@
 │   └── coleta_arxiv.py      ← coleta via ArXiv API (backup)
 └── eval/
     ├── queries.tsv          ← 15 queries do domínio
-    ├── qrels.tsv            ← 232 julgamentos de relevância
+    ├── qrels.tsv            ← 231 julgamentos de relevância (15 queries)
     ├── evaluate.py          ← script de avaliação (P@k, MAP, nDCG)
     └── pool_anotacao.md     ← docs do pool com título+abstract
 ```
