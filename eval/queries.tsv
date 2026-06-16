@@ -1,15 +1,15 @@
 q01	public procurement document classification machine learning
-q02	information retrieval legal text NLP
+q02	legal compliance checking NLP automated verification
 q03	tender document analysis natural language processing
-q04	government spending transparency data mining
-q05	contract clause extraction deep learning
-q06	e-procurement automation artificial intelligence
-q07	bid similarity detection neural networks
-q08	regulatory compliance document NLP
-q09	knowledge graph public administration
-q10	question answering legal documents transformers
-q11	dense retrieval specialized domain biomedical legal
-q12	hybrid retrieval sparse dense ranking fusion
-q13	named entity recognition administrative text
-q14	text summarization government reports
-q15	anomaly detection procurement corruption
+q04	government contract clause extraction deep learning
+q05	procurement fraud detection anomaly bidding collusion
+q06	e-procurement automation decision support system
+q07	bid evaluation criteria similarity neural networks
+q08	regulatory compliance verification document NLP
+q09	knowledge graph public procurement legislation
+q10	semi-supervised classification legal text few labels
+q11	licitação análise conformidade inteligência artificial
+q12	tribunal contas auditoria automatizada documentos
+q13	contratos públicos processamento linguagem natural
+q14	lei 14133 compras públicas tecnologia
+q15	classificação documentos administrativos aprendizado máquina

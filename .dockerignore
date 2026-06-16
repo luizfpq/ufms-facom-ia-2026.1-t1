@@ -1,0 +1,13 @@
+.venv/
+**/__pycache__/
+*.pyc
+.git/
+relatorio-fonte/
+Material_Apoio_T1/
+*.pdf
+!relatorio.pdf
+data/*_raw.jsonl
+.gitignore
+roteiro-video.md
+*.md
+!README.md

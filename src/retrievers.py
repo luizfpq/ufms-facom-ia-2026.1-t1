@@ -4,7 +4,10 @@ from rank_bm25 import BM25Okapi
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from src.preprocessing import preprocess, preprocess_str, doc_text
+try:
+    from src.preprocessing import preprocess, preprocess_str, doc_text
+except ModuleNotFoundError:
+    from preprocessing import preprocess, preprocess_str, doc_text
 
 
 # ---------------------------------------------------------------------------

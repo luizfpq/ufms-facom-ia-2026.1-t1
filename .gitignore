@@ -14,8 +14,8 @@ build/
 *.ipynb_checkpoints
 
 # Dados pesados (disponibilizar externamente se necessário)
-data/arxiv_raw.jsonl
-data/*.jsonl
+data/*_raw.jsonl
+# corpus.jsonl é entregue no ZIP (não ignorar)
 
 # macOS
 .DS_Store
@@ -25,15 +25,35 @@ __MACOSX/
 .vscode/
 .idea/
 
-# LaTeX build artifacts
-relatorio/*.aux
-relatorio/*.log
-relatorio/*.out
-relatorio/*.toc
-relatorio/*.synctex.gz
-relatorio/*.bbl
-relatorio/*.blg
+# LaTeX build artifacts (fontes ficam em relatorio-fonte/; relatorio.pdf na raiz É entregue)
+relatorio-fonte/*.aux
+relatorio-fonte/*.log
+relatorio-fonte/*.out
+relatorio-fonte/*.toc
+relatorio-fonte/*.synctex.gz
+relatorio-fonte/*.bbl
+relatorio-fonte/*.blg
+relatorio-fonte/*.bcf
+relatorio-fonte/*.run.xml
+relatorio-fonte/*.fdb_latexmk
+relatorio-fonte/*.fls
+relatorio-fonte/relatorio.pdf
+
+# Conteúdo NÃO público
+# roteiro interno de gravação
+roteiro-video.md
+# material do docente (não redistribuir)
+Material_Apoio_T1/
+# enunciado do docente
+Trabalho_2026-1.pdf
+# contém IPs/infra do homelab — não publicar
+docker/DEPLOY-*.md
 
 # Segredos
 .env
 *.key
+*.pem
+id_*
+
+# Submissao (nao publicar): contem enderecos/credenciais de acesso
+LINKS.txt
