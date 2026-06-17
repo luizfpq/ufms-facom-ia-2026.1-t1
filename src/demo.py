@@ -1,4 +1,6 @@
-"""Demo interativa: dada uma query, retorna ranking dos 3 sistemas.
+"""Demo interativa: dada uma query, retorna o ranking dos recuperadores.
+
+Mostra BM25, KNN/TF-IDF, Denso (embeddings) e o RRF (BM25 + denso).
 
 Uso:
     python src/demo.py
@@ -13,10 +15,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from utils import load_corpus
 from retrievers import (build_bm25_index, search_bm25,
                         build_tfidf_index, search_knn,
+                        build_dense_index, search_dense,
                         reciprocal_rank_fusion)
 
 ROOT = Path(__file__).resolve().parent.parent
 CORPUS_PATH = ROOT / "data" / "corpus.jsonl"
+DENSE_CACHE = str(ROOT / "data" / "dense_emb.npy")
 
 
 def _clean(v):
@@ -54,6 +58,7 @@ def main():
     print("Construindo índices...", end=" ", flush=True)
     bm25_index = build_bm25_index(corpus)
     vectorizer, tfidf_matrix = build_tfidf_index(corpus)
+    dense_emb = build_dense_index(corpus, cache_path=DENSE_CACHE)
     print("OK\n")
 
     # Query via argumento ou interativa
@@ -75,12 +80,16 @@ def main():
 
         bm25_res = search_bm25(query, bm25_index, corpus, k=10)
         knn_res = search_knn(query, vectorizer, tfidf_matrix, corpus, k=10)
+        dense_res = search_dense(query, dense_emb, corpus, k=10)
         rrf_res = reciprocal_rank_fusion([
             search_bm25(query, bm25_index, corpus, k=100),
-            search_knn(query, vectorizer, tfidf_matrix, corpus, k=100),
+            search_dense(query, dense_emb, corpus, k=100),
         ])[:10]
 
-        for name, results in [("BM25", bm25_res), ("KNN", knn_res), ("RRF", rrf_res)]:
+        for name, results in [("BM25 (esparso)", bm25_res),
+                              ("KNN/TF-IDF (denso classico)", knn_res),
+                              ("Denso (embeddings)", dense_res),
+                              ("RRF (BM25 + denso)", rrf_res)]:
             print(f"\n{'='*60}")
             print(f" {name} — Top 5")
             print(f"{'='*60}")
