@@ -23,11 +23,11 @@
 \maketitle
 
 \begin{abstract}
-This paper presents a hybrid information retrieval system for scientific articles on artificial intelligence applied to public procurement. The system combines BM25 (sparse retrieval) with a TF-IDF/KNN-based dense retriever via Reciprocal Rank Fusion (RRF) over a bilingual corpus (English + Portuguese). We collected 3,064 articles from OpenAlex and BDTD, created 15 bilingual queries with manual relevance judgments, and evaluated performance using P@10, R@10, MAP, and nDCG@10. Results show BM25 achieves MAP=0.823, KNN/TF-IDF MAP=0.774, and the RRF hybrid MAP=0.867 with P@10=0.727, surpassing both individual retrievers in P@10, R@10, and MAP, while BM25 retains the best nDCG@10 (0.853 vs.\ 0.845). The hybrid approach is particularly effective for bilingual queries where sparse and dense retrievers complement each other.
+This paper presents a hybrid information retrieval system for scientific articles on artificial intelligence applied to public procurement. The system combines BM25 (sparse retrieval) with a TF-IDF/KNN-based dense retriever via Reciprocal Rank Fusion (RRF) over a bilingual corpus (English + Portuguese). We collected 3,106 articles from OpenAlex, BDTD, and arXiv, created 15 bilingual queries with manual relevance judgments, and evaluated performance using P@10, R@10, MAP, and nDCG@10. Results show the supervised re-ranking module (M1) achieves the best MAP (0.864), with BM25 a strong baseline (MAP=0.830). The dense retriever scored lower, which we trace to pooling bias in the relevance judgments rather than to the model itself. We discuss how this annotation bottleneck motivates semi-supervised learning for the procurement domain.
 \end{abstract}
 
 \begin{resumo}
-Este trabalho apresenta um sistema de recuperação de informação híbrido para artigos científicos sobre inteligência artificial aplicada a compras públicas. O sistema combina BM25 (recuperação esparsa) com um recuperador denso baseado em TF-IDF/KNN via Reciprocal Rank Fusion (RRF) sobre um corpus bilíngue (inglês + português). Foram coletados 3.064 artigos da OpenAlex e da BDTD, criadas 15 consultas bilíngues com julgamentos manuais de relevância, e avaliado o desempenho com P@10, R@10, MAP e nDCG@10. Os resultados mostram BM25 com MAP=0,823, KNN/TF-IDF com MAP=0,774, e o híbrido RRF com MAP=0,867 e P@10=0,727, superando ambos os recuperadores individuais em P@10, R@10 e MAP, enquanto o BM25 mantém o melhor nDCG@10 (0,853 contra 0,845). A abordagem híbrida é particularmente eficaz para consultas bilíngues onde os recuperadores esparso e denso se complementam.
+Este trabalho apresenta um sistema de recuperação de informação híbrido para artigos científicos sobre inteligência artificial aplicada a compras públicas. O sistema combina BM25 (recuperação esparsa) com um recuperador denso baseado em TF-IDF/KNN via Reciprocal Rank Fusion (RRF) sobre um corpus bilíngue (inglês + português). Foram coletados 3.106 artigos da OpenAlex, da BDTD e do arXiv, criadas 15 consultas bilíngues com julgamentos manuais de relevância, e avaliado o desempenho com P@10, R@10, MAP e nDCG@10. Os resultados mostram o módulo de re-ranking supervisionado (M1) com o melhor MAP (0,864), e o BM25 como baseline forte (MAP=0,830). O recuperador denso pontuou abaixo, o que atribuímos ao viés de pooling nos julgamentos de relevância, e não ao modelo em si. Discutimos como esse gargalo de anotação motiva o aprendizado semissupervisionado para o domínio.
 \end{resumo}
 
 \section{Introdução}
@@ -36,17 +36,13 @@ O volume de publicações científicas sobre inteligência artificial aplicada a
 
 Este trabalho implementa e avalia um sistema de recuperação de artigos científicos sobre IA aplicada a compras públicas e licitações, comparando três abordagens: (i) BM25 como baseline esparso, (ii) KNN com representação TF-IDF como recuperador denso, e (iii) um módulo híbrido que combina ambos via Reciprocal Rank Fusion (RRF).
 
-A contribuição principal é empírica. Avaliamos as três abordagens sobre uma coleção bilíngue de 3.064 artigos do domínio, com 15 consultas (10 em inglês, 5 em português) e julgamentos manuais de relevância. A comparação mostra os trade-offs entre recuperação esparsa e densa para vocabulário jurídico-administrativo em dois idiomas.
+A contribuição principal é empírica. Avaliamos três recuperadores (BM25, KNN/TF-IDF e denso), a fusão híbrida e os módulos de aprofundamento sobre uma coleção bilíngue de 3.106 artigos do domínio, com 15 consultas e julgamentos manuais de relevância. A comparação mostra os trade-offs entre recuperação esparsa, densa e híbrida, e expõe o gargalo da anotação manual de relevância em um domínio nichado e bilíngue.
 
 \section{Trabalhos Relacionados}
 
 \textbf{BM25 e o paradigma probabilístico.} O BM25 \cite{robertson2009,manning2008} é derivado do framework de relevância probabilística, sendo uma extensão prática do modelo binário de independência (relacionado ao Naïve Bayes). A função de pontuação incorpora frequência do termo (TF), frequência inversa de documento (IDF) e normalização por comprimento do documento, parametrizada por $k_1$ (saturação de TF) e $b$ (impacto do comprimento).
 
-\textbf{Recuperação densa.} Karpukhin et al. \cite{karpukhin2020} propuseram o Dense Passage Retrieval (DPR), mostrando que representações densas aprendidas podem superar BM25 em datasets de perguntas e respostas. No entanto, para domínios especializados com vocabulário controlado, o BM25 permanece competitivo \cite{thakur2021}.
-
-\textbf{Fusão de rankings.} Cormack et al. \cite{cormack2009} demonstraram que o Reciprocal Rank Fusion (RRF) supera métodos individuais e abordagens de aprendizado de ranking em diversas tarefas TREC, sem necessidade de treinamento adicional.
-
-\textbf{Arcabouço unificado.} Lin \cite{lin2021} propõe um arcabouço que unifica recuperação esparsa, densa e híbrida sob uma visão representacional. BM25, recuperadores densos e suas combinações viram pontos de um mesmo espaço de projeto. Esse arcabouço fundamenta a comparação experimental deste trabalho.
+\textbf{Recuperação densa e fusão.} Karpukhin et al. \cite{karpukhin2020} mostraram, com o Dense Passage Retrieval, que representações densas aprendidas superam o BM25 em perguntas e respostas, embora o BM25 siga competitivo em domínios de vocabulário controlado \cite{thakur2021}. Cormack et al. \cite{cormack2009} demonstraram que o Reciprocal Rank Fusion supera métodos individuais sem treino adicional. Lin \cite{lin2021} unifica recuperação esparsa, densa e híbrida sob uma visão representacional, o que fundamenta a comparação experimental deste trabalho.
 
 \textbf{NLP para domínio legal.} Trabalhos recentes exploram modelos de linguagem para textos jurídicos \cite{chalkidis2020}, mas poucos abordam especificamente o domínio de compras públicas e licitações brasileiras.
 
@@ -54,20 +50,26 @@ A contribuição principal é empírica. Avaliamos as três abordagens sobre uma
 
 \subsection{Escopo da coleção e relação com o projeto de pesquisa}
 
-Este trabalho é o embrião técnico de uma pesquisa de mestrado sobre classificação semissupervisionada de textos licitatórios. O módulo de recuperação híbrida aqui desenvolvido será reaproveitado como componente de busca por peças processuais similares no sistema maior. A experiência com este corpus valida a arquitetura antes de migrar para documentos licitatórios reais.
+Este trabalho é o embrião técnico de uma proposta de mestrado, ainda em fase de ideia a validar com os orientadores. A proposta trata da classificação semissupervisionada de textos licitatórios para apoio à análise de conformidade em compras públicas. O sistema de recuperação aqui desenvolvido vira, nessa proposta, o módulo de busca por peças processuais similares. Construí um corpus de artigos científicos para validar a arquitetura antes de migrar para os documentos reais (pareceres, editais e atas), que dependem de coleta via LAI e de anotação própria.
 
 A coleção foi construída a partir da API OpenAlex em duas etapas: (i) coleta de artigos em inglês sobre IA aplicada a procurement e legal NLP; (ii) coleta complementar de artigos em português sobre licitações, direito administrativo e auditoria governamental. A inclusão de documentos em português é motivada pelo fato de que o domínio-alvo (compras públicas brasileiras, Lei 14.133/2021) produz literatura predominantemente em português.
 
-A segunda etapa exigiu uma busca prévia: quais bases e periódicos brasileiros publicam sobre o cruzamento entre tecnologia e administração pública? Conduzimos essa busca com apoio do Gemini (Deep Research). Verificamos os resultados manualmente e os usamos para definir as palavras-chave em português. O relatório dessa etapa (``Mapeamento e Arquitetura de APIs de Dados Abertos para PLN no Domínio Jurídico-Administrativo Brasileiro'') mapeou as fontes relevantes: PNCP, Compras.gov.br, Jurisprudência do TCU, LexML, Dados Abertos da Câmara e Senado, BDTD, SciELO e o corpus Ulysses-RFCorpus. A coleta usou a API OpenAlex, que indexa artigos de periódicos brasileiros catalogados nessas bases. Assim, uma única interface dá acesso à produção acadêmica nacional sobre o tema.
+A segunda etapa exigiu uma busca prévia: quais bases e periódicos brasileiros publicam sobre o cruzamento entre tecnologia e administração pública? Conduzimos essa busca com apoio do Gemini (Deep Research) e verificamos os resultados manualmente, o que definiu as palavras-chave em português. A coleta usou a API OpenAlex, que indexa periódicos brasileiros e dá, numa única interface, acesso amplo à produção nacional sobre o tema. Foi a escolha certa para esta etapa: gratuita, sem rate limit agressivo e com boa cobertura do domínio.
 
-Quanto à conformidade com a Seção 5 do enunciado: a OpenAlex consta entre as fontes explicitamente permitidas, e a BDTD (Biblioteca Digital Brasileira de Teses e Dissertações, do Ibict) foi adotada como fonte equivalente para a cobertura em português, mediante aprovação do professor. Nenhuma coleção pré-pronta de \emph{benchmark} de IR (e.g., BEIR, MS MARCO) foi usada como coleção principal; a coleção foi inteiramente construída e documentada para este trabalho.
+Quanto à conformidade com a Seção 5 do enunciado: a OpenAlex e o arXiv constam entre as fontes explicitamente permitidas, e a BDTD (Biblioteca Digital Brasileira de Teses e Dissertações, do Ibict) foi adotada como fonte equivalente para a cobertura em português, mediante aprovação do professor. Nenhuma coleção pré-pronta de \emph{benchmark} de IR (e.g., BEIR, MS MARCO) foi usada como coleção principal; a coleção foi inteiramente construída e documentada para este trabalho.
+
+Incluímos também o arXiv, e o resultado foi revelador. Buscas por frase exata sobre o tema retornaram apenas 42 artigos on-topic. O arXiv é forte em aprendizado de máquina, mas raso em compras públicas e direito administrativo brasileiro. Esse vazio não é uma falha da coleta. É a própria lacuna que motiva a pesquisa de mestrado: há muita IA e muita licitação, mas pouco no cruzamento dos dois.
+
+Uma nota sobre o formato dos dados. O campo identificador de cada documento chama-se \texttt{arxiv\_id}. O nome é herança do material de apoio do professor (o notebook de coleta do arXiv). Mantivemos o nome por compatibilidade, mas ele guarda o id da fonte de origem: id do arXiv para artigos do arXiv, id da OpenAlex (prefixo \texttt{W}) para a OpenAlex e id da BDTD para as teses. Um campo \texttt{source} registra a proveniência de cada documento.
+
+As bases governamentais mapeadas (PNCP, Compras.gov.br, TCU, LexML) e os pareceres obtidos via LAI não entram nesta coleção. Elas são o corpus-alvo da etapa de mestrado, quando o foco deixa de ser artigos científicos e passa a ser peças processuais reais. Esses documentos têm uma natureza própria. O PNCP e os sistemas de compras entregam cada processo com um número variável de artefatos, que muda conforme o trâmite. Os resumos e textos introdutórios não seguem padronização real, o que abre espaço para inferências erradas na automação. É aí que o aprendizado semissupervisionado faz sentido: rotular tudo à mão é inviável pelo tamanho do conjunto, então parte-se de poucos rótulos e propaga-se o aprendizado para o resto.
 
 \begin{itemize}
-    \item \textbf{Fontes:} OpenAlex (artigos de periódicos) e BDTD/Ibict (teses e dissertações brasileiras)
+    \item \textbf{Fontes:} OpenAlex (artigos de periódicos), BDTD/Ibict (teses e dissertações brasileiras) e arXiv (pré-prints)
     \item \textbf{Palavras-chave (EN):} ``public procurement NLP'', ``legal document classification'', ``regulatory compliance automation'', entre outras
     \item \textbf{Palavras-chave (PT):} ``licitação inteligência artificial'', ``tribunal contas auditoria'', ``processamento linguagem natural documentos jurídicos'', ``contratação pública tecnologia'', entre outras
     \item \textbf{Janela temporal:} 2018--2026
-    \item \textbf{Tamanho final:} 3.064 documentos (2.093 EN + 971 PT) após deduplicação
+    \item \textbf{Tamanho final:} 3.106 documentos (2.758 OpenAlex + 306 BDTD + 42 arXiv; 2.135 EN + 971 PT) após deduplicação
 \end{itemize}
 
 A distribuição temporal é equilibrada e o corpus cobre múltiplas subáreas: IA em direito, compliance, procurement, auditoria governamental e processamento de textos jurídicos.
@@ -84,7 +86,7 @@ O mesmo pipeline é aplicado a documentos e consultas, com detecção automátic
     \item \textbf{Stemming:} Porter Stemmer para inglês; RSLP Stemmer para português (ambos do NLTK).
 \end{enumerate}
 
-O texto indexado de cada documento é a concatenação de título e abstract. A abordagem bilíngue permite que consultas em português recuperem documentos da subcoleção PT e vice-versa, desde que compartilhem radicais após o stemming.
+O texto indexado de cada documento é a concatenação de título e abstract. A abordagem bilíngue funciona assim: cada texto passa pelo detector de idioma e recebe o stemmer da sua língua (Porter para inglês, RSLP para português). As stopwords dos dois idiomas são removidas sempre. Com isso, BM25 e TF-IDF tratam PT e EN no mesmo índice, sem separar as subcoleções. O alcance, porém, é limitado. Uma consulta em português só recupera um documento em inglês quando os dois compartilham radicais após o stemming, o que costuma ocorrer só com nomes próprios e siglas. Para casar significado entre idiomas sem coincidência de termos, recorremos ao recuperador denso (Seção~\ref{sec:dense}).
 
 \subsection{BM25 (recuperação esparsa)}
 
@@ -96,33 +98,50 @@ A pontuação BM25 para um documento $d$ dada uma consulta $q$ com termos $q_1, 
 \text{score}(d, q) = \sum_{i=1}^{n} \text{IDF}(q_i) \cdot \frac{f(q_i, d) \cdot (k_1 + 1)}{f(q_i, d) + k_1 \cdot (1 - b + b \cdot \frac{|d|}{\text{avgdl}})}
 \end{equation}
 
-\textbf{Conexão com Naïve Bayes:} O BM25 é derivável a partir do paradigma de relevância probabilística \cite{robertson2009}. A componente IDF corresponde ao log-odds de observar o termo em documentos relevantes versus não-relevantes, que é a estimativa do Naïve Bayes para a probabilidade de cada termo dado a classe (relevante/não-relevante), com suavização. A saturação via $k_1$ modela a suposição de que ocorrências adicionais de um termo contribuem com retornos decrescentes, relaxando a independência condicional do Naïve Bayes puro. O parâmetro $b$ normaliza pelo comprimento do documento, compensando o viés de documentos longos que teriam naturalmente mais ocorrências de qualquer termo.
+\textbf{Conexão com Naïve Bayes.} BM25 e Naïve Bayes partem da mesma pergunta: qual a chance de um documento ser relevante, dados os termos da consulta? O Naïve Bayes responde assumindo que os termos são independentes entre si. O BM25 herda essa ideia. A componente IDF é o coração da ligação. Ela pesa cada termo pelo quanto ele distingue um documento relevante dos demais, o mesmo papel do log-odds que o Naïve Bayes calcula para cada palavra dada a classe. Termos raros valem mais porque carregam mais informação. Sobre essa base, o BM25 acrescenta dois ajustes que o Naïve Bayes puro não tem. O $k_1$ controla a saturação: a décima ocorrência de um termo agrega menos que a segunda, porque repetir não aumenta a relevância para sempre. O $b$ corrige o tamanho do documento, para que um texto longo não pareça mais relevante só por conter mais palavras. Em resumo, o BM25 é um Naïve Bayes calibrado para ranquear.
 
 \subsection{KNN/TF-IDF (recuperação por vizinhos mais próximos)}
 
-Construímos uma matriz TF-IDF via \texttt{scikit-learn} (\texttt{TfidfVectorizer}, min\_df=2, max\_df=0.95) e realizamos busca por vizinhos mais próximos usando similaridade de cosseno.
+\textbf{O que é TF-IDF.} O TF-IDF transforma cada documento em um vetor numérico. Cada posição do vetor é um termo do vocabulário. O valor combina dois fatores: TF, quantas vezes o termo aparece no documento, e IDF, quão raro o termo é no corpus inteiro. Um termo frequente naquele documento e raro nos demais recebe peso alto, porque é o que o caracteriza. Termos comuns a quase todos os textos recebem peso baixo. Documentos sobre o mesmo assunto terminam com valores parecidos nas mesmas posições, e seus vetores ficam próximos no espaço.
+
+Construímos a matriz TF-IDF com o \texttt{TfidfVectorizer} do \texttt{scikit-learn}. Os cortes \texttt{min\_df=2} e \texttt{max\_df=0.95} descartam termos que aparecem em um só documento e termos presentes em mais de 95\% deles, que não ajudam a distinguir nada. A busca devolve os $K$ documentos de maior similaridade de cosseno com a consulta.
 
 \textbf{Conexão com a disciplina:} O uso de KNN aqui difere da classificação vista em aula em um aspecto conceitual: em vez de encontrar os K vizinhos mais próximos e votar uma classe, devolvemos os K documentos mais similares como ranking de resposta à consulta. O algoritmo é o mesmo (busca por proximidade em espaço vetorial), mas a saída é uma lista ranqueada e não um rótulo. A ponderação TF-IDF conecta com a discussão de Naïve Bayes: o componente IDF é análogo à probabilidade a priori de observar cada termo, penalizando termos frequentes e valorizando termos discriminativos.
 
 \textbf{Escolha da similaridade:} Optamos pela similaridade do cosseno em vez da distância euclidiana porque o cosseno normaliza pelo comprimento dos vetores, tornando a métrica invariante ao tamanho do documento. Dois abstracts sobre o mesmo tema, um curto e um longo, terão vetores na mesma direção (alto cosseno) mesmo com magnitudes diferentes (alta distância euclidiana).
 
-\subsection{Módulo M5: Reciprocal Rank Fusion}
+\subsection{Recuperador denso com embeddings}
+\label{sec:dense}
 
-O RRF \cite{cormack2009} combina múltiplos rankings sem necessidade de normalização de scores:
+O TF-IDF casa termos exatos. Ele não sabe que ``licitação'' e ``procurement'' falam da mesma coisa. Para cobrir esse caso, adicionamos um terceiro recuperador, baseado em embeddings. Um embedding é um vetor denso produzido por uma rede neural pré-treinada, no qual textos de significado parecido ficam próximos mesmo sem compartilhar palavras. Usamos o modelo multilíngue \texttt{paraphrase-multilingual-MiniLM-L12-v2}, que mapeia português e inglês no mesmo espaço. Cada documento e cada consulta viram um vetor de 384 dimensões, e a busca devolve os $K$ vizinhos de maior cosseno. O uso de modelos prontos é permitido (a aula não cobre o treinamento deles), então implementamos apenas a codificação e a busca. A motivação é direta: resolver a recuperação cross-lingual que o TF-IDF não alcança.\footnote{Hardware: Intel Core i7-12650H (16 threads), Debian 13, Python 3.13, execução em CPU (sem GPU). A codificação dos 3.106 documentos levou cerca de 3,6 minutos; BM25 e TF-IDF rodam em segundos.}
+
+\subsection{Módulos de aprofundamento}
+
+Além do pipeline obrigatório, implementamos os cinco módulos da Seção 4 do enunciado. O Mestrado exige só um. Fizemos os cinco por interesse próprio em comparar as abordagens. Cada módulo é avaliado na Seção~\ref{sec:resultados}.
+
+\textbf{M5: ranking híbrido (RRF).} O RRF \cite{cormack2009} combina rankings sem normalizar scores:
 
 \begin{equation}
 \text{score}_{\text{RRF}}(d) = \sum_{r \in R} \frac{1}{k + \text{rank}_r(d)}
 \end{equation}
 
-onde $k=60$ (constante padrão) e $R$ é o conjunto de rankings (BM25 e KNN). A vantagem é não depender de calibração entre scores de sistemas diferentes: os scores do BM25 variam de 0 a ~20, enquanto os do cosseno variam de 0 a 1, mas o RRF opera apenas sobre posições.
+onde $k=60$ (constante padrão) e $R$ reúne os rankings do BM25 e do recuperador denso. A vantagem é não depender de calibração entre escalas: o BM25 varia de 0 a cerca de 20 e o cosseno de 0 a 1, mas o RRF olha só a posição. É um ensemble. Cada sistema vota pelo lugar que deu ao documento, e juntar votos de modelos com vieses diferentes reduz o erro, como na combinação de classificadores.
 
-\textbf{Conexão com a disciplina:} O RRF implementa um ensemble de modelos análogo à combinação de classificadores: cada sistema ``vota'' nos documentos via sua posição no ranking, e a fusão agrega essas evidências independentes. A premissa é similar à do ensemble em classificação: sistemas com vieses diferentes tendem a errar em documentos diferentes, e a combinação reduz a variância do erro.
+\textbf{M1: re-ranking supervisionado.} Treinamos uma Regressão Logística para reordenar o top-100 do BM25. As features de cada par (consulta, documento) são cinco: score BM25, cosseno TF-IDF, similaridade densa, sobreposição de termos e ano. O rótulo vem dos qrels. Para não treinar e testar na mesma consulta, usamos validação leave-one-query-out: o modelo treina em 14 consultas e reordena a 15ª. Liga à aula de classificação supervisionada.
+
+\textbf{M2: agrupamento dos resultados.} Aplicamos K-means sobre o top-30 de uma consulta, no espaço dos embeddings. O número de grupos é escolhido pela silhueta. Cada grupo é descrito pelos seus termos mais frequentes, formando facetas temáticas. Liga às aulas de agrupamento de dados.
+
+\textbf{M3: expansão de consulta por regras de associação.} Tratamos cada documento como uma transação de termos. Para cada termo da consulta, mineramos regras $\{A\} \Rightarrow \{B\}$ com suporte, confiança e lift acima de um limiar. O lift descarta termos genéricos, que coocorrem com quase tudo. Os termos consequentes entram na consulta, que é re-executada no BM25. Liga à aula de regras de associação.
+
+\textbf{M4: otimização de hiperparâmetros.} Fizemos grid search sobre $k_1 \in \{1{,}2;\ 1{,}5;\ 2{,}0\}$ e $b \in \{0{,}5;\ 0{,}75;\ 1{,}0\}$ do BM25, maximizando o MAP no conjunto de avaliação. A configuração vencedora e a tabela completa de desempenho constam na Seção~\ref{sec:resultados}. Liga à aula de algoritmos de otimização.
 
 \subsection{Avaliação}
 
 \subsubsection{Consultas de teste}
 
-Criamos 15 consultas representativas do domínio (Tabela~\ref{tab:queries}), cobrindo subáreas distintas (procurement, legal NLP, compliance, recuperação híbrida) e variando o nível de especificidade.
+Criamos 15 consultas representativas do domínio (Tabela~\ref{tab:queries}). Elas não são aleatórias. Espelham as subáreas da proposta de mestrado: classificação de documentos (q01, q15), conformidade e compliance (q02, q08, q11), análise de editais e contratos (q03, q04, q13), fraude e auditoria (q05, q12), apoio à decisão, avaliação e grafos (q06, q07, q09) e o recorte central da pesquisa, a classificação semissupervisionada com poucos rótulos (q10). Variamos a especificidade de propósito: algumas amplas, outras finas.
+
+A divisão entre 10 consultas em inglês e 5 em português também é deliberada. A literatura de método (NLP, IR, ML) é quase toda em inglês, e é nela que estão os trabalhos técnicos. As cinco consultas em português miram o domínio brasileiro: Lei 14.133, tribunal de contas, contratos públicos. A divisão testa o sistema nos dois eixos que o problema real combina: a técnica, em inglês, e a aplicação, em português.
 
 \begin{table}[h]
 \centering
@@ -154,75 +173,79 @@ q15 & PT & classificação documentos administrativos aprendizado máquina \\
 
 \subsubsection{Construção dos qrels}
 
-Anotamos relevância via pooling: para cada query, unimos os top-10 retornados por cada sistema (BM25, KNN, RRF), removemos duplicatas, e julgamos cada documento manualmente. O pool totaliza 231 julgamentos com escala ternária (0=não-relevante, 1=relevante, 2=muito relevante).
+Anotamos a relevância por pooling. Para cada consulta, unimos o top-10 de todos os sistemas (BM25, KNN, denso, RRF e os módulos), removemos duplicatas e julgamos cada documento na escala 0/1/2. O conjunto começou com 231 julgamentos manuais. Ao acrescentar o denso, o arXiv e os módulos, o pool cresceu e exigiu 212 julgamentos novos. Esses foram anotados com apoio de um classificador treinado nos 231 originais e revisados pelo autor, totalizando 443 julgamentos. A Seção~\ref{sec:anotacao} discute o que essa etapa revelou e por que ela é central para a pesquisa de mestrado.
 
 \textbf{Critério de relevância adotado:} consideramos relevante (1) todo artigo que aborda diretamente a técnica ou domínio especificado na query, e altamente relevante (2) artigos que tratam exatamente do cruzamento entre a técnica de NLP/ML indicada e o domínio de procurement/legal da query.
 
 \textbf{Métricas reportadas:} Precision@10 (P@10), Recall@10 (R@10), Mean Average Precision (MAP) e normalized Discounted Cumulative Gain (nDCG@10).
 
 \section{Resultados}
+\label{sec:resultados}
 
 \begin{table}[h]
 \centering
-\caption{Resultados médios dos três sistemas sobre 15 consultas}
+\caption{Resultados médios sobre 15 consultas (corpus de 3.106 documentos, 443 julgamentos). M2 e M4 não geram ranking comparável e são reportados à parte.}
 \label{tab:results}
 \begin{tabular}{lcccc}
 \toprule
 \textbf{Sistema} & \textbf{P@10} & \textbf{R@10} & \textbf{MAP} & \textbf{nDCG@10} \\
 \midrule
-BM25             & 0.707 & 0.738 & 0.823 & 0.853 \\
-KNN/TF-IDF       & 0.700 & 0.724 & 0.774 & 0.745 \\
-RRF Híbrido      & 0.727 & 0.762 & 0.867 & 0.845 \\
+BM25                & 0.727 & 0.644 & 0.830 & 0.791 \\
+KNN/TF-IDF          & 0.720 & 0.639 & 0.740 & 0.697 \\
+Denso (embeddings)  & 0.240 & 0.172 & 0.180 & 0.306 \\
+RRF (BM25+denso)    & 0.580 & 0.456 & 0.552 & 0.642 \\
+M1 (re-ranking)     & \textbf{0.740} & \textbf{0.651} & \textbf{0.864} & \textbf{0.794} \\
+M3 (expansão)       & 0.567 & 0.515 & 0.608 & 0.643 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-O RRF supera ambos os componentes em P@10 (+2pp sobre o BM25, +2,7pp sobre o KNN) e em MAP (+4,4pp sobre o BM25). O BM25 mantém o melhor nDCG@10. A fusão agrega valor no cenário bilíngue, com fontes heterogêneas.
+O M1 (re-ranking supervisionado) é o melhor sistema: MAP 0,864 e P@10 0,740, acima do BM25 (MAP 0,830). Faz sentido, porque o M1 aprende a combinar os sinais dos outros recuperadores. O BM25 é um baseline forte, e o KNN/TF-IDF empata com ele em P@10. O recuperador denso e o RRF aparecem bem abaixo. Esse número pede cuidado na leitura. Ele diz mais sobre como construímos o gabarito do que sobre a qualidade do denso, e a Seção~\ref{sec:anotacao} explica por quê.
 
 \subsection{Análise qualitativa}
 
-\textbf{Onde o esparso vence (q08).} A consulta é ``regulatory compliance verification document NLP''. O BM25 lidera (P@10=1,00 e nDCG@10=0,970, contra 0,90 e 0,777 do KNN). O motivo é direto: os termos ``compliance'', ``verification'' e ``document'' aparecem literalmente nos títulos e abstracts dos artigos relevantes. É o cenário ideal do casamento exato. O vocabulário é técnico e preciso, e não exige generalização semântica.
+\textbf{O re-ranking em ação (q01).} Na consulta ``public procurement document classification machine learning'', o M1 melhora o BM25 em toda a linha: P@10 de 0,90 para 1,00, MAP de 0,78 para 0,89 e nDCG de 0,90 para 0,96. O classificador aprende a combinar score BM25, cosseno, similaridade densa e sobreposição de termos, e empurra para o topo os documentos certos. É o ganho que se espera de um re-ranking supervisionado.
 
-\textbf{Onde o denso vence (q10).} A consulta é ``semi-supervised classification legal text few labels'', alinhada ao tema de mestrado do autor. Aqui o KNN/TF-IDF supera o BM25 (P@10=0,90 e AP=0,888, contra 0,70 e 0,684). Ele recupera artigos sobre ``few-shot'' e ``low-resource'', que tratam do mesmo conceito de ``semi-supervised'' sem repetir o termo. O BM25 fica preso ao casamento literal: acha os que dizem ``semi-supervised'', mas perde os equivalentes. O caso mostra o ganho da representação vetorial sobre o vocabulário fixo.
+\textbf{O casamento exato ainda resolve muito (q14).} A consulta em português ``lei 14133 compras públicas tecnologia'' tem P@10=1,00 no BM25. Quando a consulta traz o termo exato do domínio, como o número da lei, o esparso acerta sem precisar de semântica.
 
-\textbf{Onde a fusão vence (q14).} A consulta ``lei 14133 compras públicas tecnologia'' é inteiramente em português. BM25 e KNN acertam o topo (P@10=1,00 nos dois), mas o RRF obtém a melhor ordenação (AP=1,00). O BM25 traz artigos que citam a Lei 14.133/2021 pelo número. O KNN agrega trabalhos sobre governo digital e transformação tecnológica na administração pública, que tratam do mesmo assunto sem citar a lei. A fusão reúne as duas evidências no topo.
+\textbf{O denso e o limite do gabarito (q07).} O recuperador denso pontua baixo em quase todas as consultas, chegando a P@10=0,00 em q07. Mas, ao ler os resultados, vê-se que ele recupera documentos plausíveis. Em q01, ele traz a dissertação ``Classificação automática de documentos'' (similaridade 0,64), que o nosso gabarito marcou como não-relevante. O problema não está no denso. Está no gabarito: ele foi montado a partir de um pool majoritariamente lexical, e os documentos que só o denso encontra ficaram de fora ou foram subjulgados. A próxima seção trata disso.
 
-\textbf{Onde ambos falham (q07).} A consulta ``bid evaluation criteria similarity neural networks'' cruza uma tarefa (avaliação de propostas) com um método (similaridade por redes neurais). Os dois recuperadores ficam abaixo da média (BM25 P@10=0,60 e AP=0,72; KNN P@10=0,40 e AP=0,50). A causa não está nos modelos, e sim na coleção: há poucos artigos exatamente nessa interseção. O corpus cobre classificação e conformidade de documentos, mas é raso em avaliação automática de propostas com redes neurais. O BM25 recupera os termos isolados (``evaluation'', ``neural networks'') fora de contexto. O KNN se dispersa entre temas adjacentes. O RRF ajuda um pouco (P@10=0,80) ao juntar os poucos relevantes de cada um. A limitação é de cobertura do corpus, e a saída é expandi-lo (ver Conclusão).
+\textbf{Módulos M2 e M4.} O M2 (agrupamento) separou o top-30 de uma consulta em grupos coerentes, escolhidos por silhueta, com facetas temáticas distintas. O M4 (otimização) varreu a grade de $k_1$ e $b$ do BM25 e encontrou a melhor configuração no conjunto de avaliação. As saídas completas estão nos apêndices e no repositório.
 
 \section{Discussão}
 
 \subsection{Trade-offs entre recuperação esparsa e densa}
 
-\textbf{RRF lidera em P@10, R@10 e MAP; BM25 mantém o melhor nDCG@10.} No corpus bilíngue com fontes heterogêneas (OpenAlex EN, OpenAlex PT, BDTD), o RRF atinge P@10=0,727 e MAP=0,867, superando tanto o BM25 (P@10=0,707, MAP=0,823) quanto o KNN (P@10=0,700, MAP=0,774). A exceção é o nDCG@10: o BM25 (0,853) supera de pouco o RRF (0,845). O nDCG aplica desconto logarítmico e premia os documentos mais relevantes nas primeiras posições. Quando a consulta usa o vocabulário preciso do domínio, o casamento exato do BM25 leva vantagem no topo. A fusão, por sua vez, às vezes intercala documentos densos de relevância apenas parcial. Ainda assim, combinar rankings complementares compensa quando há diversidade entre os recuperadores: o BM25 captura termos exatos (e.g., ``14133'', ``procurement'') e o KNN captura proximidade semântica entre documentos que tratam do mesmo tema sem repetir os termos.
+\textbf{O melhor sistema foi o M1.} O re-ranking supervisionado lidera em todas as métricas (MAP 0,864, P@10 0,740), porque combina os sinais dos demais recuperadores em vez de depender de um só. O BM25 é o baseline forte (MAP 0,830), e o KNN/TF-IDF empata com ele em P@10 (0,720 contra 0,727). A subcoleção em português, mais diversa, ajuda o TF-IDF a competir com o esparso.
 
-\textbf{BM25 e KNN praticamente empatam em P@10.} A diferença entre ambos é de apenas 0,7pp. Isso ocorre porque a subcoleção PT (BDTD + OpenAlex PT) introduz vocabulário mais diverso que o corpus EN puro, e o TF-IDF captura essa diversidade vetorial de forma competitiva. Em corpora exclusivamente anglófonos com vocabulário controlado, a literatura reporta vantagens maiores do BM25.
+\textbf{O denso e o RRF ficaram abaixo, e isso merece explicação.} Pelos números, o denso (P@10 0,240) e o RRF (0,580) decepcionam. Mas a próxima seção mostra que o problema está no gabarito, não nos modelos. A barreira de idioma também pesa: o stemmer bilíngue casa pouco entre PT e EN, e era o denso multilíngue que deveria cobrir esse vão. Para medir esse ganho, porém, é preciso um gabarito que enxergue os relevantes que o denso encontra.
 
-\textbf{Fontes heterogêneas favorecem a fusão.} A inclusão de teses da BDTD (textos mais longos, vocabulário acadêmico formal) junto a artigos de periódicos (mais concisos) cria uma situação onde os dois recuperadores erram em documentos diferentes: o BM25 penaliza teses longas via $b$ e o KNN se confunde com a alta dimensionalidade de abstracts curtos. O RRF resolve essa complementaridade.
+\subsection{O desafio da anotação de relevância}
+\label{sec:anotacao}
 
-\textbf{Perspectiva cross-lingual.} Queries em português recuperam documentos PT e queries em inglês recuperam documentos EN. O stemmer bilíngue permite alguma sobreposição, mas a barreira do idioma limita a recuperação cruzada. Embeddings multilíngues resolveriam essa limitação em trabalho futuro.
+Ao adicionar o denso, o arXiv e os módulos, o pool de avaliação cresceu. Só o denso trouxe 120 documentos novos ao top-10. Anotar tudo à mão, relendo cada par consulta-documento, é caro. Recorremos a um classificador treinado nos 231 julgamentos originais para sugerir os 212 rótulos novos, e os revisamos. Esse classificador aprendeu com um gabarito de origem lexical, então tende a marcar como não-relevante justamente os documentos que o denso encontra por significado. O resultado é que o denso é penalizado por achar itens certos que o gabarito não reconhece.
+
+O fenômeno é conhecido. Zobel \cite{zobel1998} mostrou que documentos fora do pool, contados como não-relevantes, enviesam a comparação contra sistemas que recuperam itens novos. Voorhees \cite{voorhees2000} mostrou que julgamentos de relevância variam entre anotadores, mas ainda permitem comparar sistemas. Sanderson \cite{sanderson2010} descreve como construir coleções de teste mais sólidas. A relevância graduada que adotamos segue Järvelin e Kekäläinen \cite{jarvelin2002}.
+
+Apresentamos os números como eles são. Eles refletem o método e o conhecimento que tínhamos no momento, não um veredito final sobre o denso. O caminho de melhoria é claro: pool mais profundo, mais de um anotador com acordo medido, e julgamento por leitura, não por proxy lexical.
+
+E aqui está o elo com a pesquisa de mestrado. Anotar relevância à mão é lento, subjetivo e não escala. Sentimos isso ao construir 443 julgamentos para apenas 15 consultas. No domínio licitatório, com volume muito maior e sem dados rotulados, o custo se torna proibitivo. É essa a motivação do mestrado: aprendizado semissupervisionado para classificar e recuperar com poucos rótulos, reduzindo a dependência da anotação manual.
 
 \subsection{Conexões com a disciplina}
 
-Os componentes implementados mapeiam diretamente para tópicos da disciplina:
-
-\begin{itemize}
-    \item \textbf{BM25 $\leftrightarrow$ Naïve Bayes:} paradigma probabilístico, IDF como log-odds, independência de termos.
-    \item \textbf{KNN/TF-IDF $\leftrightarrow$ Classificador KNN:} busca por vizinhos em espaço vetorial; a diferença é a saída (ranking vs. rótulo).
-    \item \textbf{RRF $\leftrightarrow$ Ensemble de classificadores:} combinação de evidências independentes para reduzir variância.
-    \item \textbf{TF-IDF $\leftrightarrow$ Naïve Bayes:} IDF como estimativa de probabilidade a priori dos termos.
-\end{itemize}
+Os componentes mapeiam diretamente para tópicos vistos em sala. BM25 e TF-IDF ligam ao paradigma probabilístico do Naïve Bayes (IDF como log-odds). O recuperador denso e o KNN ligam à busca por vizinhos em espaço vetorial; a diferença para a aula é a saída, um ranking em vez de um rótulo. O RRF liga ao ensemble de classificadores. E os módulos M1 a M4 ligam, na ordem, à classificação supervisionada, ao agrupamento de dados, às regras de associação e aos algoritmos de otimização.
 
 \subsection{Limitações}
 
-(i) Os qrels foram construídos via pooling top-10, subestimando documentos relevantes em posições mais baixas (viés de pooling). (ii) O KNN usa TF-IDF e não embeddings neurais, o que limita a capacidade semântica do recuperador denso. (iii) O corpus mistura artigos de subáreas adjacentes (blockchain, ética de IA) que não são diretamente sobre procurement, introduzindo ruído. (iv) A anotação de relevância, embora manual, foi feita por um único anotador, sem cálculo de acordo inter-anotador.
+(i) O gabarito tem viés de pooling, e parte dos julgamentos novos foi sugerida por classificador e revisada, não anotada do zero (Seção~\ref{sec:anotacao}). (ii) A avaliação usa 15 consultas e um único anotador, sem acordo inter-anotador; o M4 otimiza sobre esse mesmo conjunto, com risco de superajuste. (iii) O corpus mistura subáreas adjacentes (blockchain, ética de IA), o que introduz ruído. (iv) O recuperador denso usa um modelo pré-treinado genérico; um modelo jurídico em português tende a ir melhor.
 
 \section{Conclusão}
 
-Implementamos e avaliamos um sistema de recuperação híbrido para artigos sobre IA em compras públicas. O corpus é bilíngue, com 3.064 documentos: artigos da OpenAlex em inglês e português, mais teses e dissertações da BDTD. O módulo RRF supera os recuperadores individuais em P@10 (0,727 contra 0,707 do BM25) e MAP (0,867 contra 0,823). A fusão de rankings complementares funciona quando há diversidade linguística, de representação e de fontes. Como trabalho futuro, pretendemos (i) trocar o TF-IDF por embeddings multilíngues, (ii) incorporar dados primários das APIs governamentais mapeadas (PNCP, Compras.gov.br, TCU, LexML) para montar um corpus de peças processuais reais, e (iii) migrar o sistema para a pesquisa de mestrado sobre classificação semissupervisionada de textos licitatórios\footnote{Vídeo de apresentação e repositório: ver arquivo LINKS.txt.}.
+Implementamos e avaliamos um sistema de recuperação híbrido para artigos sobre IA em compras públicas. O corpus é bilíngue, com 3.106 documentos: artigos da OpenAlex (inglês e português), teses e dissertações da BDTD e pré-prints do arXiv. O melhor sistema foi o re-ranking supervisionado (M1), com MAP 0,864. Mais importante que o ranking, porém, foi uma lição de método. O recuperador denso ficou subavaliado porque o gabarito, de origem lexical, não reconhece os relevantes que ele encontra por significado. Isso expõe o gargalo da anotação manual de relevância. Como trabalho futuro, pretendemos (i) reconstruir o gabarito com pool mais profundo e mais de um anotador, para medir o denso de forma justa; (ii) incorporar dados primários das APIs governamentais (PNCP, Compras.gov.br, TCU, LexML) e pareceres via LAI; e (iii) avançar para a classificação semissupervisionada de textos licitatórios, foco do mestrado\footnote{Vídeo de apresentação e repositório: ver arquivo LINKS.txt.}.
 
 Uma extensão conceitual está em prototipação, em ramo separado do repositório (\texttt{v2-reference-finder}), sem impacto sobre os resultados aqui reportados. Ela reaproveita o núcleo de recuperação como assistente de referências bibliográficas. O texto de um artigo em elaboração entra como consulta longa. Dele extraímos palavras-chave que alimentam a busca híbrida. A saída são referências em formato BibTeX e uma análise de lacunas: temas presentes no texto, mas sem cobertura no corpus. O recorte transpõe o problema de recuperação deste trabalho para o apoio à revisão de literatura, em continuidade com a pesquisa de mestrado.
 
-Para fins de reprodução e avaliação, o sistema completo (pipeline, dados e relatório) está empacotado em container e disponível para teste interativo via SSH\footnote{O método de acesso (endereço, porta e chave privada) está incluído nos arquivos anexos ao \texttt{.zip} desta submissão; as instruções constam do arquivo LINKS.txt. O login conduz diretamente ao ambiente isolado do trabalho, onde \texttt{make eval} reproduz as métricas aqui reportadas e \texttt{make demo} executa uma consulta.}.
+Para fins de reprodução e avaliação, o sistema completo (pipeline, dados e relatório) está empacotado em container e disponível para teste interativo por um terminal web no navegador\footnote{O endereço de acesso (terminal web, sem necessidade de instalar nada) está no arquivo LINKS.txt da submissão. O acesso conduz diretamente ao ambiente isolado do trabalho, onde \texttt{make eval} reproduz as métricas aqui reportadas e \texttt{make demo} executa uma consulta. Um segundo endereço dá acesso ao protótipo \texttt{v2-reference-finder}.}.
 
 \subsection*{Declaração de uso de IA generativa}
 
@@ -237,5 +260,67 @@ Em ambos os casos, as ferramentas serviram como apoio instrumental. As decisões
 
 \bibliographystyle{sbc}
 \bibliography{references}
+
+\section*{Apêndice A: Average Precision por consulta}
+
+A Tabela~\ref{tab:apx} traz a AP de cada sistema por consulta. Ela mostra de forma transparente o efeito discutido na Seção~\ref{sec:anotacao}: o denso pontua perto de zero em consultas como q12 e q15, onde os documentos que ele recupera não constam como relevantes no gabarito.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Average Precision (AP) por consulta.}
+\label{tab:apx}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{qid} & \textbf{BM25} & \textbf{KNN} & \textbf{Denso} & \textbf{RRF} & \textbf{M1} & \textbf{M3} \\
+\midrule
+q01 & 0.782 & 0.693 & 0.272 & 0.630 & 0.891 & 0.647 \\
+q02 & 0.590 & 0.738 & 0.189 & 0.448 & 0.734 & 0.571 \\
+q03 & 0.759 & 0.692 & 0.294 & 0.683 & 0.824 & 0.478 \\
+q04 & 0.813 & 0.676 & 0.349 & 0.702 & 0.855 & 0.484 \\
+q05 & 0.850 & 0.758 & 0.203 & 0.570 & 0.909 & 0.401 \\
+q06 & 0.750 & 0.423 & 0.200 & 0.606 & 0.759 & 0.344 \\
+q07 & 0.729 & 0.436 & 0.028 & 0.392 & 0.714 & 0.282 \\
+q08 & 0.788 & 0.720 & 0.301 & 0.661 & 0.886 & 0.525 \\
+q09 & 0.927 & 0.895 & 0.190 & 0.555 & 0.977 & 0.445 \\
+q10 & 0.713 & 0.805 & 0.154 & 0.614 & 0.795 & 0.753 \\
+q11 & 1.000 & 0.982 & 0.012 & 0.595 & 1.000 & 0.810 \\
+q12 & 0.952 & 0.798 & 0.001 & 0.433 & 0.954 & 0.864 \\
+q13 & 1.000 & 0.700 & 0.250 & 0.532 & 0.833 & 1.000 \\
+q14 & 0.959 & 0.919 & 0.253 & 0.705 & 0.987 & 0.672 \\
+q15 & 0.841 & 0.861 & 0.000 & 0.149 & 0.841 & 0.841 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section*{Apêndice B: Otimização do BM25 (M4)}
+
+Grid search de $k_1$ e $b$, com MAP no conjunto de avaliação. A melhor configuração ($k_1=2{,}0$, $b=0{,}5$) eleva o MAP de 0,830 (padrão) para 0,851.
+
+\begin{table}[h]
+\centering
+\small
+\caption{MAP por configuração do BM25.}
+\begin{tabular}{ccc|ccc|ccc}
+\toprule
+$k_1$ & $b$ & MAP & $k_1$ & $b$ & MAP & $k_1$ & $b$ & MAP \\
+\midrule
+1.2 & 0.50 & 0.817 & 1.5 & 0.50 & 0.829 & 2.0 & 0.50 & \textbf{0.851} \\
+1.2 & 0.75 & 0.816 & 1.5 & 0.75 & 0.830 & 2.0 & 0.75 & 0.831 \\
+1.2 & 1.00 & 0.781 & 1.5 & 1.00 & 0.774 & 2.0 & 1.00 & 0.782 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section*{Apêndice C: Agrupamento dos resultados (M2)}
+
+Para a consulta ``lei 14133 compras públicas tecnologia'', o K-means sobre o top-30 (espaço dos embeddings) escolheu $k=2$ pela silhueta. As facetas, descritas pelos termos mais frequentes de cada grupo:
+
+\begin{itemize}
+    \item \textbf{Grupo 0 (marco legal e processo):} público, lei, compra, processo, contrato, licitação.
+    \item \textbf{Grupo 1 (tecnologia e sustentabilidade):} compra, público, análise, tecnologia, sustentável, federal.
+\end{itemize}
+
+O pool completo de anotação, com sugestões, sinais e julgamentos, está disponível como planilha no repositório\footnote{\url{https://github.com/luizfpq/ufms-facom-ia-2026.1-t1/blob/main/eval/pool_revisao.xlsx}}.
 
 \end{document}

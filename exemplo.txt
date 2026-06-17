@@ -1,0 +1,5 @@
+Sistemas de recuperação de informação para textos de compras públicas e licitações.
+Este trabalho investiga classificação semissupervisionada de documentos jurídico-administrativos,
+com poucos rótulos, combinando BM25, representações densas e fusão de rankings (RRF).
+O foco é a análise de conformidade de pareceres e editais à luz da Lei 14.133/2021.
+Semi-supervised learning, legal document classification, public procurement, information retrieval.

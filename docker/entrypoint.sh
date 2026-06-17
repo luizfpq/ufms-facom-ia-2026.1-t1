@@ -12,14 +12,16 @@ cd /app 2>/dev/null || true
 banner() {
 cat <<'BANNER'
 ============================================================
- Sistema de Recuperacao de Informacao Hibrido (BM25+KNN+RRF)
- Trabalho 1 — Inteligencia Artificial — UFMS/FACOM 2026.1
+ Recuperacao de artigos — Trabalho 1 IA — UFMS/FACOM 2026.1
  Autor: Luiz Fernando Postingel Quirino
 
- Comandos uteis (dentro deste container):
+ Sistema completo: BM25 + KNN/TF-IDF + denso (embeddings)
+ + RRF + modulos M1-M5.
+
+ Comandos:
    make demo QUERY="public procurement NLP"   consulta -> ranking
-   make eval                                   avaliacao completa
-   cat relatorio.pdf  (ou baixe via scp)       relatorio final
+   make eval                                   avaliacao dos 6 sistemas
+   ls relatorio.pdf                            relatorio final
 ============================================================
 BANNER
 }
@@ -30,9 +32,12 @@ case "$cmd" in
   eval)  exec make eval ;;
   shell) banner; exec /bin/bash ;;
   sshd)
-    # Gera host keys na primeira execucao e sobe o sshd em foreground
-    ssh-keygen -A 2>/dev/null || true
-    exec /usr/sbin/sshd -D -e
+    echo "Modo SSH removido. Use o modo 'ttyd' (terminal web)." >&2; exit 1
+    ;;
+  ttyd)
+    # Terminal web (WebSocket). Cada conexao abre um shell proprio no container.
+    # Base-path = slug nao-adivinhavel: http://host:porta/SLUG
+    exec ttyd -W -p 7681 -b "/${TTYD_SLUG:-terminal}" /usr/local/bin/entrypoint.sh shell
     ;;
   *)     exec "$@" ;;
 esac

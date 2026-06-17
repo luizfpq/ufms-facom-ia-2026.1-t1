@@ -19,6 +19,32 @@ ROOT = Path(__file__).resolve().parent.parent
 CORPUS_PATH = ROOT / "data" / "corpus.jsonl"
 
 
+def _clean(v):
+    """Normaliza valores ausentes (None, NaN, 'nan', vazio) para None."""
+    if v is None:
+        return None
+    s = str(v).strip()
+    if s.lower() in ("", "nan", "none", "null"):
+        return None
+    return s
+
+
+def doc_link(doc: dict) -> str:
+    """Melhor link rastreavel do documento: DOI > PDF > arXiv > OpenAlex > id."""
+    doi = _clean(doc.get("doi"))
+    if doi:
+        return doi if doi.startswith("http") else f"https://doi.org/{doi}"
+    pdf = _clean(doc.get("pdf_url"))
+    if pdf:
+        return pdf
+    aid = _clean(doc.get("arxiv_id")) or ""
+    if doc.get("source") == "arxiv" or aid[:1].isdigit():
+        return f"https://arxiv.org/abs/{aid}"
+    if aid.startswith("W"):
+        return f"https://openalex.org/{aid}"
+    return aid or "(sem identificador)"
+
+
 def main():
     print("Carregando corpus...", end=" ", flush=True)
     corpus = load_corpus(str(CORPUS_PATH))
@@ -61,6 +87,7 @@ def main():
             for i, (doc_id, score) in enumerate(results[:5], 1):
                 doc = doc_map.get(doc_id, {})
                 print(f"  {i}. [{score:.4f}] {doc.get('title', '?')[:75]}")
+                print(f"        {doc_link(doc)}")
 
         print()
         if queries is not None:

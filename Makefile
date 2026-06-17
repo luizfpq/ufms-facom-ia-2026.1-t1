@@ -1,17 +1,18 @@
 # Trabalho Pratico 1 — Inteligencia Artificial — UFMS/FACOM 2026.1
-# Sistema de Recuperacao de Informacao Hibrido (BM25 + KNN + RRF)
+# Recuperacao de artigos: BM25 + KNN/TF-IDF + denso (embeddings) + RRF + modulos M1-M5
 #
 # Use o ambiente virtual antes de rodar os alvos Python:
 #   python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
 
 PYTHON ?= python3
-RUNS    = notebooks/runs/bm25.trec notebooks/runs/knn.trec notebooks/runs/rrf.trec
+RUNS    = notebooks/runs/bm25.trec notebooks/runs/knn.trec notebooks/runs/dense.trec \
+          notebooks/runs/rrf.trec notebooks/runs/m1.trec notebooks/runs/m3.trec
 QUERY  ?= public procurement NLP
 
 all: help
 
 runs:
-	$(PYTHON) src/run_pipeline.py
+	$(PYTHON) src/run_all.py
 
 eval: runs
 	$(PYTHON) eval/evaluate.py --qrels eval/qrels.tsv --runs $(RUNS) --k 10
@@ -29,13 +30,13 @@ clean:
 	$(MAKE) -C relatorio-fonte clean
 
 help:
-	@echo "Trabalho 1 IA — UFMS/FACOM 2026.1 (BM25 + KNN + RRF)"
+	@echo "Trabalho 1 IA — UFMS/FACOM 2026.1 (BM25 + KNN + denso + RRF + modulos M1-M5)"
 	@echo ""
 	@echo "Pre-requisito: source .venv/bin/activate (ou defina PYTHON=)"
 	@echo ""
 	@echo "Targets:"
-	@echo "  make runs        Gera os 3 runs TREC (BM25, KNN, RRF) em notebooks/runs/"
-	@echo "  make eval        Gera os runs e avalia (P@10, R@10, MAP, nDCG@10)"
+	@echo "  make runs        Gera todas as runs e analises (run_all.py)"
+	@echo "  make eval        Gera as runs e avalia os 6 sistemas (P@10, R@10, MAP, nDCG@10)"
 	@echo "  make demo        Demo interativa (use QUERY=\"sua consulta\")"
 	@echo "  make test        Roda os testes (pip install -r requirements-dev.txt)"
 	@echo "  make relatorio   Compila o relatorio LaTeX -> relatorio.pdf na raiz"

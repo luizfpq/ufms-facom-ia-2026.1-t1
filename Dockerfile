@@ -15,9 +15,12 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# make para os atalhos; openssh-server para acesso SSH direto ao container.
+# make para os atalhos; ttyd para o terminal web.
 # Sem texlive (o relatorio.pdf ja vai pronto).
-RUN apt-get update && apt-get install -y --no-install-recommends make openssh-server \
+RUN apt-get update && apt-get install -y --no-install-recommends make curl ca-certificates \
+    && curl -fsSL -o /usr/local/bin/ttyd "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.$(uname -m)" \
+    && chmod +x /usr/local/bin/ttyd \
+    && apt-get purge -y curl && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Dependencias Python (camada cacheavel)
@@ -26,6 +29,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Dados do NLTK embutidos na imagem (stopwords + RSLP), evita download em runtime
 RUN python -c "import nltk; nltk.download('stopwords', download_dir='/opt/nltk_data'); nltk.download('rslp', download_dir='/opt/nltk_data')"
+
+# Modelo de embeddings embutido (evita download na primeira consulta)
+ENV HF_HOME=/opt/hf
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')" \
+    && chmod -R a+rX /opt/hf
 
 # Codigo, dados e artefatos de entrega
 COPY src/ ./src/
@@ -36,34 +44,15 @@ COPY Makefile ./
 COPY relatorio.pdf ./
 COPY README.md ./
 
-# Usuario nao-root dono do app (e tambem o usuario de login SSH do container)
+# Usuario nao-root dono do app (e o usuario do terminal web)
 RUN useradd --create-home --shell /bin/bash app \
-    && chown -R app:app /app \
-    && install -d -m 700 -o app -g app /home/app/.ssh
+    && chown -R app:app /app
 
-# Entrypoint (modos: demo/eval/shell/sshd)
+# Entrypoint (modos: demo/eval/shell/ttyd)
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod 755 /usr/local/bin/entrypoint.sh
 
-# Configuracao do sshd DO CONTAINER (acesso direto do docente, isolado do host)
-# - apenas chave, sem senha; sem root; somente o usuario app
-# - ao logar, cai no banner + bash em /app (pode rodar make eval / demo)
-RUN mkdir -p /run/sshd \
-    && { \
-       echo "PermitRootLogin no"; \
-       echo "PasswordAuthentication no"; \
-       echo "ChallengeResponseAuthentication no"; \
-       echo "KbdInteractiveAuthentication no"; \
-       echo "AllowUsers app"; \
-       echo "X11Forwarding no"; \
-       echo "AllowTcpForwarding no"; \
-       echo "PermitTunnel no"; \
-       echo "PrintMotd no"; \
-       echo "Match User app"; \
-       echo "    ForceCommand /usr/local/bin/entrypoint.sh shell"; \
-    } > /etc/ssh/sshd_config.d/ia-t1.conf
-
-# Default: execucao local (demo). No deploy, sobe-se com o comando "sshd".
+# Default: execucao local (demo). No deploy, sobe-se com o comando "ttyd".
 USER app
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["demo"]

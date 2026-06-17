@@ -20,7 +20,7 @@
 ├── data/
 │   ├── openalex_raw.jsonl   ← coleta bruta OpenAlex (2.099 registros)
 │   ├── bdtd_raw.jsonl       ← coleta bruta BDTD (PT)
-│   └── corpus.jsonl         ← coleção limpa (3.064 documentos, EN+PT)
+│   └── corpus.jsonl         ← coleção limpa (3.106 docs: OpenAlex+BDTD+arXiv)
 ├── notebooks/
 │   ├── 01_coleta_arxiv.ipynb
 │   ├── 02_baseline_bm25.ipynb
@@ -48,6 +48,9 @@
 ```
 
 ## Reprodução
+
+> **Ambiente testado:** Intel Core i7-12650H (16 threads), Debian 13, Python 3.13, execução em CPU (sem GPU). A codificação dos embeddings dos 3.106 documentos leva ~3,6 min; o restante roda em segundos.
+
 
 ```bash
 # 1. Criar ambiente virtual e instalar dependências
@@ -78,6 +81,11 @@ make demo QUERY="public procurement NLP"
 make relatorio   # compila relatorio-fonte/ → relatorio.pdf na raiz
 ```
 
+> A demo mostra, abaixo de cada resultado, o link de acesso do documento (DOI
+> quando existe; senão PDF, arXiv ou OpenAlex). Antes o resultado trazia só o
+> texto indexado (título + resumo), o que dificultava conferir cada item. Com o
+> link e os dados reais de acesso, dá para abrir a fonte e verificar na hora.
+
 ### Execução isolada (Docker)
 
 ```bash
@@ -89,24 +97,28 @@ docker run --rm ia-t1 make eval    # avaliação completa
 ## Decisões de projeto
 
 - **Tema:** IA aplicada a compras públicas, licitações e textos jurídico-administrativos
-- **Fonte da coleção:** OpenAlex API (EN+PT) + BDTD (teses/dissertações PT); ArXiv como backup (estava com rate limit)
-- **Idiomas:** Inglês (2.093 docs) + Português (971 docs) — corpus bilíngue
+- **Fontes:** OpenAlex (EN+PT) + BDTD (teses/dissertações PT) + arXiv (42 artigos on-topic; tema nichado)
+- **Idiomas:** Inglês (2.135 docs) + Português (971 docs) — corpus bilíngue
 - **Janela temporal:** 2018–2026
-- **Tamanho final:** 3.064 documentos
+- **Tamanho final:** 3.106 documentos (2.758 OpenAlex + 306 BDTD + 42 arXiv)
 - **Pré-processamento:** lowercase, regex tokenization, stopwords bilíngues (NLTK EN+PT + custom), Porter stemmer (EN) / RSLP stemmer (PT), detecção automática de idioma
-- **BM25:** rank_bm25 (Okapi), k1=1.5, b=0.75
-- **KNN/denso:** TF-IDF (scikit-learn) + cosine similarity
-- **Módulo M5:** Reciprocal Rank Fusion (k=60) combinando BM25 + KNN
+- **Recuperadores:** BM25 (k1=1.5, b=0.75); KNN/TF-IDF + cosseno; denso (embeddings multilíngues, `paraphrase-multilingual-MiniLM-L12-v2`)
+- **Módulos:** M1 re-ranking (Reg. Logística), M2 clustering (K-means), M3 expansão por regras de associação, M4 otimização (grid search), M5 RRF (BM25 + denso)
 
 ## Resultados
 
-Corpus bilíngue: 3.064 documentos (2.093 EN + 971 PT, fontes: OpenAlex + BDTD)
+Corpus bilíngue: 3.106 documentos (2.135 EN + 971 PT; OpenAlex + BDTD + arXiv). 15 consultas, 443 julgamentos de relevância.
 
 | Sistema | P@10 | R@10 | MAP | nDCG@10 |
 |---------|------|------|-----|---------|
-| BM25 | 0.707 | 0.738 | 0.823 | 0.853 |
-| KNN/TF-IDF | 0.700 | 0.724 | 0.774 | 0.745 |
-| RRF Híbrido | **0.727** | **0.762** | **0.867** | 0.845 |
+| BM25 | 0.727 | 0.644 | 0.830 | 0.791 |
+| KNN/TF-IDF | 0.720 | 0.639 | 0.740 | 0.697 |
+| Denso (embeddings) | 0.240 | 0.172 | 0.180 | 0.306 |
+| RRF (BM25+denso) | 0.580 | 0.456 | 0.552 | 0.642 |
+| **M1 (re-ranking)** | **0.740** | **0.651** | **0.864** | **0.794** |
+| M3 (expansão) | 0.567 | 0.515 | 0.608 | 0.643 |
+
+> O re-ranking supervisionado (M1) é o melhor sistema. O denso e o RRF aparecem subavaliados por viés de pooling: encontram relevantes que o gabarito (de origem lexical) não reconhece. O relatório discute isso em "O desafio da anotação de relevância" e o liga à motivação do mestrado (anotação manual não escala). M4 (otimização) achou o melhor BM25 em k1=2.0, b=0.5 (MAP 0.851).
 
 ## Uso de assistentes de IA generativa
 

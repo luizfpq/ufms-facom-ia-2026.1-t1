@@ -1,0 +1,6 @@
+Consulta: lei 14133 compras públicas tecnologia
+Melhor k=2 (silhueta=0.170)
+
+Facetas:
+  cluster 0: públic, lei, compr, process, contrat, licit
+  cluster 1: compr, públic, anális, tecnolog, sustent, feder

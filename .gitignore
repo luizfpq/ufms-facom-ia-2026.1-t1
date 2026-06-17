@@ -60,3 +60,16 @@ LINKS.txt
 
 # pytest
 .pytest_cache/
+
+# Embeddings cache (regeneravel)
+*.npy
+
+# Material interno de processo (nao publicar)
+_interno/
+# Arquivos de trabalho da anotacao (o entregavel e o qrels.tsv final)
+eval/pool_revisao.tsv
+eval/pool_novos_para_anotar.tsv
+eval/qrels_sugerido.tsv
+
+# Backup do corpus pre-arXiv (regeneravel via merge_corpus.py)
+data/corpus_pre_arxiv.jsonl
