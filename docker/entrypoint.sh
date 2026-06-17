@@ -21,7 +21,8 @@ cat <<'BANNER'
  Comandos:
    make demo QUERY="public procurement NLP"   consulta -> ranking
    make eval                                   avaliacao dos 6 sistemas
-   ls relatorio.pdf                            relatorio final
+   cat README.md                               instrucoes e resultados
+ (o relatorio em PDF esta na submissao e no repositorio)
 ============================================================
 BANNER
 }
