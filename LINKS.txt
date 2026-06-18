@@ -1,0 +1,48 @@
+Video de apresentacao: <COLAR AQUI O LINK APOS O UPLOAD (YouTube ou Google Drive, publico)>
+Repositorio: https://github.com/luizfpq/ufms-facom-ia-2026.1-t1
+
+------------------------------------------------------------
+Acesso ao sistema (opcional, para avaliacao ao vivo)
+------------------------------------------------------------
+Credenciais (mesmas para v1 e v2):
+
+    Usuario: prof
+    Senha:   61PeN9Q2j-r4oDz2ctKGug
+
+Disponivel 24h. Varios avaliadores podem usar ao mesmo tempo.
+
+------------------------------------------------------------
+v1 — Terminal web (sistema completo de recuperacao)
+------------------------------------------------------------
+    http://204.216.149.149:2260/4c14aa1e3af0729651eb2684
+
+Abra no navegador, insira as credenciais acima. Abre um terminal
+interativo dentro do container com todo o pipeline funcional.
+
+Comandos uteis:
+    make demo QUERY="public procurement NLP"   # consulta -> ranking
+    make eval                                  # avaliacao dos 6 sistemas
+    make help                                  # lista todos os alvos
+    cat README.md                              # instrucoes e resultados
+
+------------------------------------------------------------
+v2 — Interface web (buscador de referencias com LLM)
+------------------------------------------------------------
+    http://204.216.149.149:2261/
+
+Abra no navegador, insira as credenciais acima. Interface grafica
+onde voce pode:
+  - Fazer upload de PDF, DOCX ou TXT
+  - Colar uma URL de artigo/pagina
+  - Digitar ou colar texto diretamente
+
+O sistema usa um LLM local (qwen2.5:3b) para extrair conceitos do
+texto, gera queries semanticas, busca no corpus (3.106 artigos) via
+BM25+KNN+RRF, e apresenta referencias com justificativas.
+Tempo de resposta: ~30-60 segundos.
+
+------------------------------------------------------------
+Observacoes
+------------------------------------------------------------
+- Ambiente isolado e descartavel (containers sem dados sensiveis)
+- O relatorio em PDF esta nesta submissao e no repositorio
