@@ -1,0 +1,42 @@
+services:
+  v2-app:
+    build: .
+    container_name: v2-app
+    restart: unless-stopped
+    ports:
+      - "2261:8000"
+    networks:
+      - v2net
+    volumes:
+      - ../data/corpus.jsonl:/app/data/corpus.jsonl:ro
+    environment:
+      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_MODEL=qwen2.5:3b
+      - CORPUS_PATH=/app/data/corpus.jsonl
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
+    pids_limit: 256
+    mem_limit: 2g
+    depends_on:
+      - ollama
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    networks:
+      - v2net
+    volumes:
+      - ollama_data:/root/.ollama
+    mem_limit: 12g
+    pids_limit: 512
+
+networks:
+  v2net:
+    external: true
+
+volumes:
+  ollama_data:
+    external: true

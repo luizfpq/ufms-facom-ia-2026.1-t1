@@ -1,6 +1,6 @@
 # Proposta: v2 — Buscador de Referências Bibliográficas
 
-> **Status:** 📋 Planejado (não implementado)
+> **Status:** Implementado (v2-app com LLM local)
 > **Contexto:** Evolução do T1 de IA (Prof. Bruno Nogueira, FACOM/UFMS 2026.1)
 > **Motivação:** Usar o motor de busca existente como ferramenta de pesquisa real
 
@@ -130,7 +130,8 @@ O artigo **"Panorama das Contratações de Nuvem no MEC"** (CCETI/IFSP) precisa 
 | Data | Decisão |
 |---|---|
 | 2026-06-08 | Proposta documentada. Implementação em sessão futura. |
-| - | v2 NÃO altera o T1 entregue — branch separada ou diretório `v2/` |
+| 2026-06-18 | Implementado com LLM local (ollama qwen2.5:3b), FastAPI, frontend web. Deploy no ironqui-261 na porta 2261. |
+| - | v2 NÃO altera o T1 entregue — branch separada `v2-reference-finder` |
 
 ---
 

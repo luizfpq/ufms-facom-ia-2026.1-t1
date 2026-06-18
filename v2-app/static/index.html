@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Buscador de Referências v2</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#442D65;color:#E8E6F4;min-height:100vh;padding:2rem}
+.container{max-width:900px;margin:0 auto}
+h1{font-size:1.5rem;margin-bottom:.5rem;color:#9A85C3}
+.subtitle{color:#9A85C3;margin-bottom:2rem;font-size:.9rem}
+.input-section{background:#523D76;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem}
+.tabs{display:flex;gap:.5rem;margin-bottom:1rem}
+.tab{padding:.5rem 1rem;border-radius:6px;cursor:pointer;background:#442D65;border:none;color:#E8E6F4;font-size:.85rem}
+.tab.active{background:#734EAA;color:#fff}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.drop-zone{border:2px dashed #9A85C3;border-radius:8px;padding:2rem;text-align:center;cursor:pointer;transition:.2s}
+.drop-zone:hover,.drop-zone.drag-over{border-color:#734EAA;background:#523D76}
+.drop-zone p{color:#9A85C3}
+.drop-zone .filename{color:#7B65B3;margin-top:.5rem;font-weight:600}
+input[type=text],textarea{width:100%;padding:.75rem;border-radius:6px;border:1px solid #9A85C3;background:#442D65;color:#E8E6F4;font-size:.9rem}
+textarea{min-height:120px;resize:vertical}
+.btn{background:#734EAA;color:#fff;border:none;padding:.75rem 1.5rem;border-radius:8px;font-size:1rem;cursor:pointer;margin-top:1rem;width:100%;font-weight:600}
+.btn:hover{background:#523D76}
+.btn:disabled{background:#525A70;cursor:not-allowed}
+.spinner{display:none;text-align:center;padding:2rem;color:#9A85C3}
+.spinner.active{display:block}
+.spinner .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#734EAA;margin:0 3px;animation:bounce .6s infinite alternate}
+.spinner .dot:nth-child(2){animation-delay:.2s}
+.spinner .dot:nth-child(3){animation-delay:.4s}
+@keyframes bounce{to{transform:translateY(-8px)}}
+.results{display:none}
+.results.active{display:block}
+.meta{background:#523D76;border-radius:8px;padding:1rem;margin-bottom:1rem}
+.meta h3{color:#9A85C3;font-size:.9rem;margin-bottom:.5rem}
+.tags{display:flex;flex-wrap:wrap;gap:.4rem}
+.tag{background:#442D65;padding:.25rem .6rem;border-radius:4px;font-size:.75rem;color:#E8E6F4}
+.result-card{background:#523D76;border-radius:8px;padding:1rem;margin-bottom:.75rem;border-left:3px solid #734EAA}
+.result-card.legislation{border-left-color:#7B65B3}
+.result-card h4{font-size:.9rem;color:#fff;margin-bottom:.3rem}
+.result-card .authors{font-size:.8rem;color:#9A85C3}
+.result-card .justification{font-size:.8rem;color:#E8E6F4;margin-top:.4rem;font-style:italic}
+.result-card .score{font-size:.7rem;color:#525A70;float:right}
+.result-card a{color:#9A85C3;font-size:.8rem;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Buscador de Refer&ecirc;ncias v2</h1>
+  <p class="subtitle">Envie um documento, URL ou texto &mdash; o sistema extrai conceitos via LLM e busca refer&ecirc;ncias acad&ecirc;micas e legisla&ccedil;&atilde;o relevante.</p>
+
+  <div class="input-section">
+    <div class="tabs">
+      <button class="tab active" data-tab="upload">Upload</button>
+      <button class="tab" data-tab="url">URL</button>
+      <button class="tab" data-tab="text">Texto</button>
+    </div>
+    <div class="tab-content active" id="tab-upload">
+      <div class="drop-zone" id="dropzone">
+        <p>Arraste um arquivo aqui ou clique para selecionar</p>
+        <p style="font-size:.75rem;margin-top:.5rem">PDF, DOCX ou TXT</p>
+        <p class="filename" id="filename"></p>
+        <input type="file" id="fileinput" accept=".pdf,.docx,.doc,.txt,.tex,.md" hidden>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-url">
+      <input type="text" id="urlinput" placeholder="https://exemplo.com/artigo.html">
+    </div>
+    <div class="tab-content" id="tab-text">
+      <textarea id="textinput" placeholder="Cole o texto do artigo/abstract aqui..."></textarea>
+    </div>
+    <button class="btn" id="analyze-btn">Analisar e Buscar Refer&ecirc;ncias</button>
+  </div>
+
+  <div class="spinner" id="spinner">
+    <div><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+    <p style="margin-top:1rem">Analisando com LLM e buscando no corpus (pode levar 30-60s)...</p>
+  </div>
+
+  <div class="results" id="results">
+    <div class="meta" id="meta"></div>
+    <div id="results-list"></div>
+  </div>
+</div>
+
+<script>
+const tabs=document.querySelectorAll('.tab');
+const contents=document.querySelectorAll('.tab-content');
+tabs.forEach(t=>t.addEventListener('click',()=>{
+  tabs.forEach(x=>x.classList.remove('active'));
+  contents.forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('tab-'+t.dataset.tab).classList.add('active');
+}));
+
+const dz=document.getElementById('dropzone'),fi=document.getElementById('fileinput'),fn=document.getElementById('filename');
+let selectedFile=null;
+dz.addEventListener('click',()=>fi.click());
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');if(e.dataTransfer.files[0]){selectedFile=e.dataTransfer.files[0];fn.textContent=selectedFile.name}});
+fi.addEventListener('change',()=>{if(fi.files[0]){selectedFile=fi.files[0];fn.textContent=selectedFile.name}});
+
+document.getElementById('analyze-btn').addEventListener('click',async()=>{
+  const btn=document.getElementById('analyze-btn');
+  const spinner=document.getElementById('spinner');
+  const resultsDiv=document.getElementById('results');
+  btn.disabled=true;spinner.classList.add('active');resultsDiv.classList.remove('active');
+
+  const fd=new FormData();
+  const activeTab=document.querySelector('.tab.active').dataset.tab;
+  if(activeTab==='upload'&&selectedFile) fd.append('file',selectedFile);
+  else if(activeTab==='url') fd.append('url',document.getElementById('urlinput').value);
+  else if(activeTab==='text') fd.append('text',document.getElementById('textinput').value);
+
+  try{
+    const r=await fetch('/api/analyze',{method:'POST',body:fd});
+    const data=await r.json();
+    if(data.error){alert(data.error);return}
+    renderResults(data);
+  }catch(e){alert('Erro: '+e.message)}
+  finally{btn.disabled=false;spinner.classList.remove('active')}
+});
+
+function renderResults(data){
+  const meta=document.getElementById('meta');
+  meta.innerHTML=`<h3>Conceitos extraidos (${data.keyphrases.length})</h3>
+    <div class="tags">${data.keyphrases.map(k=>`<span class="tag">${k}</span>`).join('')}</div>
+    <h3 style="margin-top:.8rem">Queries geradas (${data.queries.length})</h3>
+    <div class="tags">${data.queries.map(q=>`<span class="tag">${q}</span>`).join('')}</div>
+    <p style="margin-top:.5rem;font-size:.75rem;color:#64748b">Fonte: ${data.source} (${data.text_length} chars)</p>`;
+
+  const list=document.getElementById('results-list');
+  list.innerHTML=data.results.map(r=>{
+    if(r.type==='academic'){
+      return `<div class="result-card"><span class="score">${r.score}</span>
+        <h4>${r.title}</h4>
+        <p class="authors">${r.authors} (${r.year})${r.doi?` &mdash; <a href="https://doi.org/${r.doi}" target="_blank">DOI</a>`:''}</p>
+        ${r.justification?`<p class="justification">${r.justification}</p>`:''}
+      </div>`;
+    }else{
+      return `<div class="result-card legislation"><span class="score">${r.score}</span>
+        <h4>${r.title}</h4>
+        <p class="authors">${r.ementa}</p>
+        <a href="${r.url}" target="_blank">Acesso</a>
+      </div>`;
+    }
+  }).join('');
+  document.getElementById('results').classList.add('active');
+}
+</script>
+</body>
+</html>
