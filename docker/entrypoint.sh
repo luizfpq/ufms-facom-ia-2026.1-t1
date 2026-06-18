@@ -38,7 +38,10 @@ case "$cmd" in
   ttyd)
     # Terminal web (WebSocket). Cada conexao abre um shell proprio no container.
     # Base-path = slug nao-adivinhavel: http://host:porta/SLUG
-    exec ttyd -W -p 7681 -b "/${TTYD_SLUG:-terminal}" /usr/local/bin/entrypoint.sh shell
+    # Auth via env TTYD_CREDENTIAL (formato user:pass); sem ela, roda sem auth.
+    CRED_FLAG=""
+    [ -n "${TTYD_CREDENTIAL:-}" ] && CRED_FLAG="-c ${TTYD_CREDENTIAL}"
+    exec ttyd -W -p 7681 -b "/${TTYD_SLUG:-terminal}" $CRED_FLAG /usr/local/bin/entrypoint.sh shell
     ;;
   *)     exec "$@" ;;
 esac

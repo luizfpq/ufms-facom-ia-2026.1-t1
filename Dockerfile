@@ -17,7 +17,8 @@ WORKDIR /app
 
 # make para os atalhos; ttyd para o terminal web.
 # Sem texlive (o relatorio.pdf ja vai pronto).
-RUN apt-get update && apt-get install -y --no-install-recommends make curl ca-certificates \
+# apt-get upgrade puxa patches de seguranca (USN-8024-1 / CVE-2025-1866).
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends make curl ca-certificates \
     && curl -fsSL -o /usr/local/bin/ttyd "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.$(uname -m)" \
     && chmod +x /usr/local/bin/ttyd \
     && apt-get purge -y curl && apt-get autoremove -y \

@@ -24,6 +24,10 @@ BANNER
 cmd="${1:-shell}"
 case "$cmd" in
   shell) banner; exec /bin/bash ;;
-  ttyd)  exec ttyd -W -p 7681 -b "/${TTYD_SLUG:-terminal}" /usr/local/bin/entrypoint.sh shell ;;
+  ttyd)
+    CRED_FLAG=""
+    [ -n "${TTYD_CREDENTIAL:-}" ] && CRED_FLAG="-c ${TTYD_CREDENTIAL}"
+    exec ttyd -W -p 7681 -b "/${TTYD_SLUG:-terminal}" $CRED_FLAG /usr/local/bin/entrypoint.sh shell
+    ;;
   *)     exec "$@" ;;
 esac

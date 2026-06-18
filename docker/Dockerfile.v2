@@ -8,7 +8,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends make curl ca-certificates \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends make curl ca-certificates \
     && curl -fsSL -o /usr/local/bin/ttyd "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.$(uname -m)" \
     && chmod +x /usr/local/bin/ttyd \
     && apt-get purge -y curl && apt-get autoremove -y \
