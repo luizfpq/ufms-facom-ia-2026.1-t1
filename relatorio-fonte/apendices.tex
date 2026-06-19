@@ -1,0 +1,93 @@
+\documentclass[12pt]{article}
+
+\usepackage{sbc-template}
+\usepackage{graphicx,url}
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+\usepackage{booktabs}
+
+\sloppy
+
+\title{Apêndices — Sistema de Recuperação de Informação Híbrido}
+
+\author{Luiz Fernando Postingel Quirino\inst{1}}
+
+\address{Faculdade de Computação -- Universidade Federal de Mato Grosso do Sul (UFMS)\\
+  Campo Grande -- MS -- Brasil
+  \email{luiz.quirino@ufms.br}
+}
+
+\begin{document}
+
+\maketitle
+
+\section*{Apêndice A: Average Precision por consulta}
+
+A Tabela~\ref{tab:apx} traz a AP de cada sistema por consulta. O denso pontua perto de zero em consultas como q12 e q15, onde os documentos que ele recupera não constam como relevantes no gabarito — evidência do viés de pooling discutido no relatório.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Average Precision (AP) por consulta.}
+\label{tab:apx}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{qid} & \textbf{BM25} & \textbf{KNN} & \textbf{Denso} & \textbf{RRF} & \textbf{M1} & \textbf{M3} \\
+\midrule
+q01 & 0.782 & 0.693 & 0.272 & 0.630 & 0.891 & 0.647 \\
+q02 & 0.590 & 0.738 & 0.189 & 0.448 & 0.734 & 0.571 \\
+q03 & 0.759 & 0.692 & 0.294 & 0.683 & 0.824 & 0.478 \\
+q04 & 0.813 & 0.676 & 0.349 & 0.702 & 0.855 & 0.484 \\
+q05 & 0.850 & 0.758 & 0.203 & 0.570 & 0.909 & 0.401 \\
+q06 & 0.750 & 0.423 & 0.200 & 0.606 & 0.759 & 0.344 \\
+q07 & 0.729 & 0.436 & 0.028 & 0.392 & 0.714 & 0.282 \\
+q08 & 0.788 & 0.720 & 0.301 & 0.661 & 0.886 & 0.525 \\
+q09 & 0.927 & 0.895 & 0.190 & 0.555 & 0.977 & 0.445 \\
+q10 & 0.713 & 0.805 & 0.154 & 0.614 & 0.795 & 0.753 \\
+q11 & 1.000 & 0.982 & 0.012 & 0.595 & 1.000 & 0.810 \\
+q12 & 0.952 & 0.798 & 0.001 & 0.433 & 0.954 & 0.864 \\
+q13 & 1.000 & 0.700 & 0.250 & 0.532 & 0.833 & 1.000 \\
+q14 & 0.959 & 0.919 & 0.253 & 0.705 & 0.987 & 0.672 \\
+q15 & 0.841 & 0.861 & 0.000 & 0.149 & 0.841 & 0.841 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section*{Apêndice B: Otimização do BM25 (M4)}
+
+Grid search de $k_1$ e $b$, com MAP no conjunto de avaliação. A melhor configuração ($k_1=2{,}0$, $b=0{,}5$) eleva o MAP de 0,830 (padrão) para 0,851.
+
+\begin{table}[h]
+\centering
+\small
+\caption{MAP por configuração do BM25.}
+\begin{tabular}{ccc|ccc|ccc}
+\toprule
+$k_1$ & $b$ & MAP & $k_1$ & $b$ & MAP & $k_1$ & $b$ & MAP \\
+\midrule
+1.2 & 0.50 & 0.817 & 1.5 & 0.50 & 0.829 & 2.0 & 0.50 & \textbf{0.851} \\
+1.2 & 0.75 & 0.816 & 1.5 & 0.75 & 0.830 & 2.0 & 0.75 & 0.831 \\
+1.2 & 1.00 & 0.781 & 1.5 & 1.00 & 0.774 & 2.0 & 1.00 & 0.782 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section*{Apêndice C: Agrupamento dos resultados (M2)}
+
+Para a consulta ``lei 14133 compras públicas tecnologia'', o K-means sobre o top-30 (espaço dos embeddings) escolheu $k=2$ pela silhueta. As facetas, descritas pelos termos mais frequentes de cada grupo:
+
+\begin{itemize}
+    \item \textbf{Grupo 0 (marco legal e processo):} público, lei, compra, processo, contrato, licitação.
+    \item \textbf{Grupo 1 (tecnologia e sustentabilidade):} compra, público, análise, tecnologia, sustentável, federal.
+\end{itemize}
+
+\section*{Apêndice D: Escopo expandido da coleção}
+
+As bases governamentais mapeadas (PNCP, Compras.gov.br, TCU, LexML) e os pareceres obtidos via LAI não entram nesta coleção. Elas são o corpus-alvo da etapa de mestrado, quando o foco deixa de ser artigos científicos e passa a ser peças processuais reais. Esses documentos têm uma natureza própria: o PNCP e os sistemas de compras entregam cada processo com um número variável de artefatos, que muda conforme o trâmite. Os resumos e textos introdutórios não seguem padronização real, o que abre espaço para inferências erradas na automação. É aí que o aprendizado semissupervisionado faz sentido: rotular tudo à mão é inviável pelo tamanho do conjunto, então parte-se de poucos rótulos e propaga-se o aprendizado para o resto.
+
+O campo identificador de cada documento chama-se \texttt{arxiv\_id}. O nome é herança do material de apoio do professor (o notebook de coleta do arXiv). Mantivemos o nome por compatibilidade, mas ele guarda o id da fonte de origem: id do arXiv para artigos do arXiv, id da OpenAlex (prefixo \texttt{W}) para a OpenAlex e id da BDTD para as teses. Um campo \texttt{source} registra a proveniência de cada documento.
+
+\vspace{1em}
+{\small Os resultados completos por consulta, o pool de revisão e os runs TREC estão disponíveis no repositório: \url{https://github.com/luizfpq/ufms-facom-ia-2026.1-t1}}
+
+\end{document}
