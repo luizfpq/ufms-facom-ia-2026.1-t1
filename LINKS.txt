@@ -31,7 +31,7 @@ v2 — Interface web (buscador de referencias com LLM)
     http://204.216.149.149:2261/
 
 Abra no navegador, insira as credenciais acima. Interface grafica
-onde voce pode:
+onde e possivel:
   - Fazer upload de PDF, DOCX ou TXT
   - Colar uma URL de artigo/pagina
   - Digitar ou colar texto diretamente

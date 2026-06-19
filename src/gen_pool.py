@@ -1,7 +1,7 @@
 """Gera pool de documentos para anotação de relevância (qrels).
 
 Pega top-10 de cada sistema (BM25, KNN, RRF) por query, remove duplicatas,
-e gera um arquivo markdown para anotação manual + um qrels.tsv template.
+e gera um arquivo markdown com o pool + um qrels.tsv inicial.
 
 Uso:
     python src/gen_pool.py
@@ -53,8 +53,8 @@ def main():
 
     # Gerar pool e markdown
     md_lines = ["# Pool de Anotação — Qrels\n"]
-    md_lines.append("> Anote relevância: 0=não-relevante, 1=relevante, 2=muito relevante\n")
-    md_lines.append("> Edite o arquivo `eval/qrels.tsv` com suas anotações.\n\n")
+    md_lines.append("> Escala de relevância: 0=não-relevante, 1=relevante, 2=muito relevante\n")
+    md_lines.append("> Anotações em `eval/qrels.tsv`.\n\n")
 
     qrels_lines = ["# qid\t0\tdoc_id\trelevancia (0/1/2)\n"]
 
@@ -100,7 +100,7 @@ def main():
     print()
     print("Instruções:")
     print("1. Abra eval/pool_anotacao.md para ver título+abstract de cada doc")
-    print("2. Edite eval/qrels.tsv alterando o último campo (0→1 ou 0→2)")
+    print("2. Alterar eval/qrels.tsv no último campo (0→1 ou 0→2)")
     print("   0 = não-relevante, 1 = relevante, 2 = muito relevante")
 
 

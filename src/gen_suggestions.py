@@ -68,7 +68,7 @@ Xtr = np.array(Xtr); ytr = np.array(ytr)
 
 clf = LogisticRegression(max_iter=2000, class_weight="balanced")
 cvp = cross_val_predict(clf, Xtr, ytr, cv=5)
-print(f"Treino: {len(ytr)} pares julgados. Acordo (5-fold) com suas anotacoes: {accuracy_score(ytr, cvp):.1%}")
+print(f"Treino: {len(ytr)} pares julgados. Acordo (5-fold) com anotacoes manuais: {accuracy_score(ytr, cvp):.1%}")
 clf.fit(Xtr, ytr)
 
 # --- pool atual e pares novos ---

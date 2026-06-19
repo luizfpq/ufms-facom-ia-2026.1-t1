@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Teleprompter — T1 IA</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#fff;font-family:system-ui,sans-serif;height:100vh;overflow:hidden}
+#prompter{padding:20vh 10vw;font-size:2.2rem;line-height:1.8;transition:transform 0.3s linear}
+.block{margin-bottom:3rem;opacity:0.4;transition:opacity 0.3s}
+.block.active{opacity:1}
+.block h2{color:#9A85C3;font-size:1.2rem;text-transform:uppercase;letter-spacing:2px;margin-bottom:0.5rem}
+.block p{font-weight:300}
+.block .emphasis{color:#734EAA;font-weight:600}
+.pronun{margin-top:1.5rem;padding:1rem;border-left:3px solid #734EAA;background:#111;font-size:1.4rem;line-height:1.6}
+.pronun h3{color:#9A85C3;font-size:1rem;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:1px}
+.pronun p{margin-bottom:0.6rem}
+.pronun strong{color:#E8E6F4}
+#controls{position:fixed;bottom:1rem;right:1rem;font-size:0.8rem;color:#525A70;text-align:right}
+#timer{position:fixed;top:1rem;right:1rem;font-size:4rem;color:#9A85C3;font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div id="timer">0:00</div>
+<div id="prompter">
+
+<div class="block" data-slide="1">
+<h2>Slide 1 — Sistema + Corpus</h2>
+<p>Este é um sistema de recuperação de artigos científicos sobre IA aplicada a compras públicas. O <span class="emphasis">"R" do RAG</span>.</p>
+<p>Construí o corpus do zero: <span class="emphasis">3.106 documentos</span> bilíngues, de três fontes. OpenAlex trouxe 2.758 artigos. BDTD, 306 teses em português. O arXiv rendeu só 42 — o tema é nichado. Muita IA, muita licitação, pouco no cruzamento.</p>
+<p>Isso é o embrião do meu mestrado: validar o módulo de busca antes de migrar para documentos reais.</p>
+</div>
+
+<div class="block" data-slide="2">
+<h2>Slide 2 — Recuperadores e Módulos</h2>
+<p><span class="emphasis">Por que dois recuperadores?</span> O enunciado pede BM25 + KNN/denso. Fiz três, mais cinco módulos.</p>
+
+<p><span class="emphasis">BM25</span> — busca por palavras. Conta quantas vezes o termo da query aparece no documento, pesa termos raros (IDF), penaliza docs longos. É como um Ctrl+F inteligente: se você busca "licitação conformidade", ele acha docs que têm exatamente essas palavras.</p>
+
+<p><span class="emphasis">KNN / TF-IDF</span> — busca por vetor. Cada documento vira um vetor numérico (peso de cada palavra). A query também vira vetor. Busca os docs cujo vetor aponta na mesma direção (cosseno). Pega sinônimos parciais, mas ainda depende de palavras em comum.</p>
+
+<p><span class="emphasis">Denso (embeddings multilíngues)</span> — busca por significado. Uma rede neural transforma o texto inteiro num vetor de 384 números. Textos com significado parecido ficam perto, <span class="emphasis">mesmo sem palavras em comum</span>. Modelo: paraphrase-multilingual-MiniLM. Resolve o cruzamento PT↔EN: "licitação" e "procurement" ficam próximos no espaço.</p>
+
+<p><span class="emphasis">Por que combinar?</span> BM25 é preciso quando o termo exato aparece ("Lei 14.133"). Denso é bom quando o significado está lá mas as palavras não ("compliance" ≈ "conformidade"). RRF junta os dois rankings sem precisar calibrar scores.</p>
+
+<p><span class="emphasis">5 módulos:</span> M1 re-ranking (classificador reordena top-100), M2 clustering (agrupa por tema), M3 expansão (adiciona sinônimos à query), M4 grid search (acha melhor k1 e b do BM25), M5 RRF (funde BM25+denso).</p>
+</div>
+
+<div class="block" data-slide="3">
+<h2>Slide 3 — Resultados</h2>
+<p>Melhor sistema: <span class="emphasis">M1, re-ranking — MAP 0,864</span>. BM25 é baseline forte com 0,830. KNN empata em P@10.</p>
+<p>O denso e o RRF ficam abaixo. Mas isso pede cuidado na leitura — o próximo slide explica.</p>
+<div class="pronun">
+<h3>Pronúncia e significado das métricas:</h3>
+<p><strong>P@10</strong> — fale: "precisão a dez" · Dos 10 primeiros resultados, quantos são relevantes? (0.74 = 7 de 10 são bons)</p>
+<p><strong>R@10</strong> — fale: "recall a dez" · Dos relevantes que existem, quantos apareceram no top-10? (cobertura)</p>
+<p><strong>MAP</strong> — fale: "mépi" (ou "ême-ei-pê") · Mean Average Precision. Média da precisão ao longo de todo o ranking — quanto mais alto, mais cedo os relevantes aparecem.</p>
+<p><strong>nDCG@10</strong> — fale: "ene-dê-cê-gê a dez" · Normalized Discounted Cumulative Gain. Leva em conta a posição E o grau de relevância (0/1/2). Docs muito relevantes no topo valem mais.</p>
+</div>
+</div>
+
+<div class="block" data-slide="4">
+<h2>Slide 4 — Viés de Pooling</h2>
+<p><span class="emphasis">Como percebi o problema:</span> Quando rodei o denso pela primeira vez, as métricas vieram péssimas — P@10 de 0,24. Mas ao ler os resultados manualmente, os documentos faziam sentido. Um artigo sobre "automated GDPR compliance checking" aparecia para a query "regulatory compliance verification" — claramente relevante, mas meu gabarito marcava 0.</p>
+
+<p><span class="emphasis">O que aconteceu:</span> Eu construí o gabarito (qrels) fazendo pooling — peguei o top-10 do BM25 e do KNN, juntei, e anotei. Esses dois sistemas acham docs por <span class="emphasis">palavras em comum</span>. Quando adicionei o denso, ele trouxe docs que nenhum dos dois tinha encontrado, porque ele busca por significado. Esses docs novos não estavam no meu gabarito. No cálculo das métricas, doc fora do gabarito = relevância 0. Resultado: o denso é penalizado por achar coisas boas que eu não tinha anotado.</p>
+
+<p><span class="emphasis">Como os "pesos" funcionam na avaliação:</span> O MAP calcula a precisão em cada posição onde aparece um relevante, e faz a média. Se o denso coloca 5 docs relevantes no top-10, mas meu gabarito só reconhece 2 deles, o MAP conta como se fossem só 2 acertos em 10. O nDCG é pior ainda — ele desconta pela posição: doc relevante na posição 1 vale muito mais que na posição 10. Se o gabarito não reconhece o doc na posição 1 como relevante, o nDCG despenca.</p>
+
+<p><span class="emphasis">Isso é conhecido:</span> Zobel (1998) descreveu esse fenômeno. Chama-se <span class="emphasis">viés de pooling</span> — sistemas que recuperam documentos fora do pool são sistematicamente subavaliados.</p>
+
+<p><span class="emphasis">Conexão com o mestrado:</span> Anotar relevância à mão não escala. Fiz 443 julgamentos para 15 queries e ainda assim o gabarito ficou incompleto. No domínio licitatório, com milhares de documentos, é inviável. Por isso o mestrado usa aprendizado <span class="emphasis">semissupervisionado</span> — poucos rótulos humanos, o resto propagado pelo modelo.</p>
+</div>
+
+<div class="block" data-slide="5">
+<h2>Slide 5 — Lições + Demo</h2>
+<p>Três lições. Um: esparso e denso são <span class="emphasis">complementares</span>. Dois: domínio nichado exige múltiplas fontes e embeddings multilíngues. Três: a qualidade da avaliação depende da completude do gabarito — esse é o gargalo que levo pro mestrado.</p>
+<p>O sistema está rodando ao vivo. Terminal web com pipeline completo, e interface web com LLM que busca referências por upload de PDF.</p>
+<p><span class="emphasis">Vou mostrar agora.</span></p>
+</div>
+
+</div>
+
+<div id="controls">
+ESPAÇO = próximo &nbsp;|&nbsp; ← = anterior &nbsp;|&nbsp; S = start/pause timer
+</div>
+
+<script>
+const blocks = document.querySelectorAll('.block');
+const prompter = document.getElementById('prompter');
+const timerEl = document.getElementById('timer');
+let current = 0;
+let timerRunning = false;
+let startTime = 0;
+let elapsed = 0;
+let timerInterval;
+
+function activate(idx) {
+  blocks.forEach((b,i) => b.classList.toggle('active', i === idx));
+  const block = blocks[idx];
+  const offset = block.offsetTop - window.innerHeight * 0.3;
+  prompter.style.transform = `translateY(-${offset}px)`;
+}
+
+function formatTime(ms) {
+  const s = Math.floor(ms/1000);
+  return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}
+
+function toggleTimer() {
+  if (timerRunning) {
+    clearInterval(timerInterval);
+    elapsed += Date.now() - startTime;
+    timerRunning = false;
+  } else {
+    startTime = Date.now();
+    timerInterval = setInterval(() => {
+      timerEl.textContent = formatTime(elapsed + Date.now() - startTime);
+    }, 200);
+    timerRunning = true;
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' || e.code === 'ArrowRight' || e.code === 'ArrowDown') {
+    e.preventDefault();
+    if (current < blocks.length - 1) current++;
+    activate(current);
+  } else if (e.code === 'ArrowLeft' || e.code === 'ArrowUp') {
+    e.preventDefault();
+    if (current > 0) current--;
+    activate(current);
+  } else if (e.code === 'KeyS') {
+    toggleTimer();
+  }
+});
+
+activate(0);
+</script>
+</body>
+</html>
